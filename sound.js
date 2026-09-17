@@ -20,8 +20,23 @@
       const water=c.createBufferSource();water.buffer=noise;water.loop=true;
       const low=c.createBiquadFilter();low.type='lowpass';low.frequency.value=680;
       const high=c.createBiquadFilter();high.type='highpass';high.frequency.value=110;
-      this.water=c.createGain();this.water.gain.value=.2;
+      this.water=c.createGain();this.water.gain.value=.38;
       water.connect(low);low.connect(high);high.connect(this.water);this.water.connect(this.master);water.start();
+      // Independent bright turbulence complements the low river bed.
+      const turbulence=c.createBuffer(1,c.sampleRate*8,c.sampleRate);
+      const foam=turbulence.getChannelData(0);
+      for(let i=0;i<foam.length;i++)foam[i]=Math.random()*2-1;
+      const stream=c.createBufferSource();stream.buffer=turbulence;stream.loop=true;
+      const streamFilter=c.createBiquadFilter();streamFilter.type='bandpass';streamFilter.frequency.value=950;streamFilter.Q.value=.5;
+      this.stream=c.createGain();this.stream.gain.value=.055;
+      stream.connect(streamFilter);streamFilter.connect(this.stream);this.stream.connect(this.master);stream.start();
+      const fall=c.createBufferSource();fall.buffer=turbulence;fall.loop=true;fall.playbackRate.value=.83;
+      const fallLow=c.createBiquadFilter();fallLow.type='lowpass';fallLow.frequency.value=3200;
+      const fallHigh=c.createBiquadFilter();fallHigh.type='highpass';fallHigh.frequency.value=160;
+      this.waterfall=c.createGain();this.waterfall.gain.value=0;
+      this.fallPan=c.createStereoPanner();
+      fall.connect(fallLow);fallLow.connect(fallHigh);fallHigh.connect(this.waterfall);
+      this.waterfall.connect(this.fallPan);this.fallPan.connect(this.master);fall.start(0,2.7);
       const rain=c.createBufferSource();rain.buffer=noise;rain.loop=true;
       const rainFilter=c.createBiquadFilter();rainFilter.type='bandpass';rainFilter.frequency.value=1850;rainFilter.Q.value=.34;
       this.rain=c.createGain();this.rain.gain.value=0;
@@ -83,7 +98,14 @@
     }
     update(time,running,ferry,camera,width){
       if(!this.enabled||!running)return;
-      this.water.gain.setTargetAtTime(.18+Math.sin(time*.47)*.035,this.context.currentTime,.5);
+      const now=this.context.currentTime;
+      this.water.gain.setTargetAtTime(.38+Math.sin(time*.47)*.065,now,.5);
+      this.stream.gain.setTargetAtTime(.065+Math.sin(time*.73)*.014,now,.5);
+      const fallX=-1505.2,halfWidth=Math.max(1,width/2);
+      const distance=Math.max(0,Math.abs(fallX-(camera+halfWidth))-halfWidth);
+      const proximity=Math.exp(-distance/380);
+      this.waterfall.gain.setTargetAtTime(proximity*(.25+Math.sin(time*.61)*.025),now,.3);
+      this.fallPan.pan.setTargetAtTime(Math.max(-1,Math.min(1,(fallX-camera-halfWidth)/halfWidth)),now,.3);
       const rowing=['sailing','approaching','departing','returning'].includes(ferry.mode);
       if(rowing&&ferry.x>camera-90&&ferry.x<camera+width+90&&time-this.lastStroke>2.1){
         this.noisePulse((ferry.x-camera)/width*2-1,.85,.24);this.lastStroke=time;

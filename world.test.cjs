@@ -79,3 +79,33 @@ test('passenger ferry uses a slow eased crossing rather than racing between bank
   assert.ok(Math.abs(ferry.x-midpoint)<3,'halfway through the trip stays near the river midpoint');
   assert.equal(ferry.mode,'sailing');
 });
+
+test('foreground boats clear the ferry hull and keep their poles inside the river',()=>{
+  const {ambientBoats,ferryGeometry}=require('./world.js');
+  const {boat}=require('./featured-characters.js');
+  for(const origin of ['east','west']){
+    const ferry=createFerry();ferry.mode='moored';ferry.berth=origin;
+    Object.assign(ferry,berths[origin]);boardFerry(ferry);
+    for(let t=0;t<56;t+=.1){
+      stepFerry(ferry,.1);
+      const hullBottom=ferry.y+(boat.top+boat.height)*ferryGeometry.scale+.6;
+      for(const other of ambientBoats(t,-2172,4344)){
+        const crewTop=other.y+(boat.deckY-boat.crewHeight)*other.scale-.6;
+        assert.ok(crewTop-hullBottom>=10,'passing silhouettes have visible water between them');
+        assert.ok(other.y+25*other.scale+.6<724,'pole tip stays in the painting');
+      }
+    }
+  }
+});
+
+test('ambient traffic keeps its spacing through long runs and wraparound',()=>{
+  const {ambientBoats}=require('./world.js'),min=-2172,max=4344,loop=max-min+220;
+  for(let t=0;t<86400;t+=13.7){
+    const boats=ambientBoats(t,min,max).sort((a,b)=>a.x-b.x);
+    for(let i=0;i<boats.length;i++){
+      const gap=(boats[(i+1)%3].x-boats[i].x+loop)%loop;
+      assert.ok(Math.abs(gap-loop/3)<1e-8);
+      assert.ok(gap>172*1.04+40,'hulls cannot catch up and overlap');
+    }
+  }
+});

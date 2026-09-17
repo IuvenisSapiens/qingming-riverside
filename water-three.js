@@ -16,13 +16,13 @@ float noise(vec2 p){
  return mix(mix(hash(i),hash(i+vec2(1.,0.)),f.x),mix(hash(i+vec2(0.,1.)),hash(i+1.),f.x),f.y);
 }
 float heightAt(vec2 p){
- p=vec2(p.x-uTime*3.,(p.y-540.)*3.3);
+ p=vec2(p.x-uTime*8.,(p.y-540.)*3.3);
  float h=0.;
  // Deep-water dispersion: shorter waves travel more slowly; no sliding grid.
  for(int i=0;i<7;i++){
   float f=float(i),k=.065+f*.029;
   vec2 d=normalize(vec2(cos(f*2.399),sin(f*2.399)));
-  h+=sin(dot(p,d)*k-sqrt(36.*k)*uTime+f*3.71)*(.4/(1.+f*.65));
+  h+=sin(dot(p,d)*k-sqrt(58.*k)*uTime+f*3.71)*(.62/(1.+f*.65));
  }
  return h;
 }
@@ -33,11 +33,11 @@ void main(){
   float h=heightAt(p),dx=(heightAt(p+vec2(.7,0.))-h)/.7,dy=(heightAt(p+vec2(0.,.7))-h)/.7;
   vec3 normal=normalize(vec3(-dx,-dy*.32,1.));
   float spec=pow(max(dot(normal,normalize(vec3(-.22,-.28,1.))),0.),48.);
-  vec2 offset=vec2(dx*10.,dy*2.2)*bank;
+  vec2 offset=vec2(dx*16.,dy*3.4)*bank;
   vec2 uv=vUv+vec2(offset.x/uView.z,-offset.y/uView.w);
   vec3 base=texture2D(uBackdrop,clamp(uv,vec2(.001),vec2(.999))).rgb;
   vec3 col=mix(base,vec3(.30,.37,.35),.16);
-  col+=vec3(.88,.87,.75)*(spec*.12);
+  col+=vec3(.88,.87,.75)*(spec*.19);
   col-=vec3(.04)*smoothstep(-.1,.65,h);
   gl_FragColor=vec4(col,bank*.9);
  }else{

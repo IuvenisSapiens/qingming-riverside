@@ -3,11 +3,11 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const {surfaceLines,strokeEffect,waterfallStrands,wakeStrength}=require('./water.js');
 
-test('river currents remain subtle, varied and inside the painted water band',()=>{
+test('river currents remain varied and inside the painted water band',()=>{
   const a=surfaceLines(2,300,900),b=surfaceLines(3,300,900);
   assert.equal(a.length,118);assert.equal(b.length,118);
   assert.ok(a.every(line=>line.y>=548&&line.y<=716));
-  assert.ok(a.every(line=>line.alpha>0&&line.alpha<.08));
+  assert.ok(a.every(line=>line.alpha>0&&line.alpha<.11));
   assert.ok(new Set(a.map(line=>Math.round(line.length))).size>20);
   assert.notDeepEqual(a,b,'current markings drift with simulation time');
 });

@@ -41,6 +41,17 @@
   const frontRailY=x=>pathY(bridgeGeometry.rail,x);
   const ferryGeometry={scale:1.24,deckY:-10,passengerX:-36};
   const ferryTravelDuration=48;
+  // Ferry waterlines reach y=608. Leave room below that for the full
+  // foreground crew silhouette (61 * 1.04), hull bobbing and a water gap.
+  // Equal speeds and even spacing prevent ambient boats catching each other.
+  function ambientBoats(time,min,max){
+    const loop=max-min+220;
+    return Array.from({length:3},(_,i)=>({
+      id:'ambient-'+i,
+      x:min-110+((440+i*loop/3+time*7)%loop+loop)%loop,
+      y:694,scale:1.04,phase:time+i,direction:1
+    }));
+  }
   const berths={east:{x:2085,y:556,shoreX:2000},west:{x:630,y:556,shoreX:568}};
   const passengerModes=new Set(['boarding','sailing','disembarking']);
   const isPassenger=ferry=>passengerModes.has(ferry.mode);
@@ -117,5 +128,5 @@
     if(phase<2*duration+pause){const back=phase-duration-pause;return {x:p.to-p.speed*back,direction:-1,moving:true,phase:back*p.speed*.15};}
     return {x:p.from,direction:-1,moving:false,phase:0};
   }
-  return {createFerry,summonFerry,stepFerry,pedestrianAt,clamp,streetY,frontRailY,bridgeGeometry,pavilionGeometry,ferryGeometry,ferryTravelDuration,berths,isPassenger,boardFerry,passengerPose};
+  return {ambientBoats,createFerry,summonFerry,stepFerry,pedestrianAt,clamp,streetY,frontRailY,bridgeGeometry,pavilionGeometry,ferryGeometry,ferryTravelDuration,berths,isPassenger,boardFerry,passengerPose};
 });

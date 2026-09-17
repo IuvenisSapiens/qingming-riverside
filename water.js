@@ -13,11 +13,11 @@
     const span=Math.max(1,max-min),lines=[];
     for(let i=0;i<count;i++){
       const depth=(i*47.73)%168,y=548+depth;
-      const drift=time*(2.2+depth*.018);
+      const drift=time*(6.2+depth*.036);
       const x=min-45+mod(i*131.37+drift,span+90);
-      const length=10+mod(i*17.19,38)*(0.72+depth/560);
-      const bend=Math.sin(time*.28+i*1.71)*(0.25+depth/260);
-      lines.push({x,y,length,bend,light:i%5===0,alpha:.025+.032*(depth/168)+.012*Math.sin(time*.33+i)});
+      const length=16+mod(i*17.19,48)*(0.72+depth/560);
+      const bend=Math.sin(time*.28+i*1.71)*(0.5+depth/170);
+      lines.push({x,y,length,bend,light:i%5===0,alpha:.04+.05*(depth/168)+.015*Math.sin(time*.33+i)});
     }
     return lines;
   }

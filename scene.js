@@ -1,4 +1,4 @@
-import {ThreeWaterRenderer} from './water-three.js?v=1.5';
+import {ThreeWaterRenderer} from './water-three.js?v=1.6';
 
 (() => {
   'use strict';
@@ -716,7 +716,7 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.5';
   function drawRiverSurface(time,min,max){
     ctx.save();ctx.beginPath();ctx.rect(min-2,535,max-min+4,H-535);ctx.clip();ctx.lineCap='round';
     for(const line of water.surfaceLines(time,min,max)){
-      ctx.globalAlpha=Math.max(.012,line.alpha);ctx.strokeStyle=line.light?'#dad4b9':'#5e6855';ctx.lineWidth=line.light?.85:.58;
+      ctx.globalAlpha=Math.max(.012,line.alpha);ctx.strokeStyle=line.light?'#dad4b9':'#5e6855';ctx.lineWidth=line.light?1.05:.75;
       ctx.beginPath();ctx.moveTo(line.x,line.y);
       ctx.bezierCurveTo(line.x+line.length*.28,line.y+line.bend,line.x+line.length*.72,line.y-line.bend,line.x+line.length,line.y);ctx.stroke();
     }
@@ -755,10 +755,6 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.5';
       ctx.drawImage(fall,camera,state.viewY,width/scale,height/scale);
     }
     drawBoatDisturbances();
-    for(let b=0;b<3;b++){
-      const x=MIN-110+((440+b*2150+t*(6+b))%(SPAN+220));
-      if(x>camera-120&&x<camera+width/scale+120)boat(x,600+b*20,1.04,t+b,1,true,'ambient-'+b);
-    }
     boat(ferry.x,ferry.y,world.ferryGeometry.scale,t+3,ferry.direction,['approaching','departing','returning','sailing'].includes(ferry.mode));
     if(['docked','moored'].includes(ferry.mode)){
       const x=ferry.berth==='east'?2021:599;stroke([[x,535],[ferry.x-49,548]],'#7c7459',.65);
@@ -766,6 +762,11 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.5';
     if(aboard()){
       protagonist();
       ctx.save();ctx.translate(ferry.x,ferry.y+Math.sin((t+3)*.7)*.6);ctx.scale(world.ferryGeometry.scale*ferry.direction,world.ferryGeometry.scale);boatRim();ctx.restore();
+    }
+    // The ferry and its passenger form one rear layer. Foreground traffic
+    // follows in waterline order, including each boat's crew and wake.
+    for(const vessel of world.ambientBoats(t,MIN,MAX)){
+      boat(vessel.x,vessel.y,vessel.scale,vessel.phase,vessel.direction,true,vessel.id);
     }
     window.QingmingWeather.drawMarketCovers(ctx,weatherSample,visibleRange);
     window.StreetDetails.breeze(ctx,life.frame,[camera,camera+width/scale]);
