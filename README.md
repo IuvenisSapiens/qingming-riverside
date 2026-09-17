@@ -4,6 +4,8 @@
 
 **公开源码：[qingming-riverside](https://github.com/xianxie6/qingming-riverside)**
 
+**在线体验：[打开画卷](https://qingming-riverside-nine.vercel.app/)**
+
 无需安装或登录，支持电脑与手机浏览器。画面为原创生成插画，不是《清明上河图》原画扫描。
 
 ## 本地运行
