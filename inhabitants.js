@@ -119,7 +119,9 @@
         const points=rows.map(v=>columns.map(u=>({source:[u*f.w,v*f.h],target:movement.deform(u,v,rig)})));
         for(let row=0;row<rows.length-1;row++)for(let col=0;col<columns.length-1;col++){
           const p=points[row][col],q=points[row][col+1],r=points[row+1][col],s=points[row+1][col+1];
-          if(Math.hypot(q.target[0]+r.target[0]-p.target[0]-s.target[0],q.target[1]+r.target[1]-p.target[1]-s.target[1])<.12){
+          // A quad is safe only when its fourth corner is exactly affine.
+          // The old .12 tolerance left disconnected edges when zoomed in.
+          if(Math.hypot(q.target[0]+r.target[0]-p.target[0]-s.target[0],q.target[1]+r.target[1]-p.target[1]-s.target[1])<1e-8){
             this.quad(surface,texture,p,q,r);
           }else{
             this.triangle(surface,texture,[p,q,r]);this.triangle(surface,texture,[q,s,r]);

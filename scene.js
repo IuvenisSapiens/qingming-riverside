@@ -316,22 +316,6 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.6';
     const personX=pose.x-pose.direction*30,personY=streetY(personX);
     return {hand:{x:personX+pose.direction*7*1.36,y:personY-16*1.36}};
   }
-  function eraseFrontRailing(){
-    // Mask the actual front railing, not a translated copy of the walking path.
-    ctx.save();ctx.globalCompositeOperation='destination-out';ctx.strokeStyle='#000';ctx.lineCap='round';
-    for(const [offset,width] of [[0,3.8],[12,2.5],[26,3.2]]){
-      ctx.beginPath();
-      for(let x=1353;x<=1711;x+=2){const y=world.frontRailY(x)+offset;x===1353?ctx.moveTo(x,y):ctx.lineTo(x,y);}
-      ctx.lineWidth=width;ctx.stroke();
-    }
-    for(const [x,top,bottom,width] of world.bridgeGeometry.posts){
-      ctx.beginPath();ctx.moveTo(x,top);ctx.lineTo(x,bottom);ctx.lineWidth=width;ctx.stroke();
-    }
-    for(let x=1364;x<1709;x+=10){
-      const y=world.frontRailY(x);ctx.beginPath();ctx.moveTo(x,y+13);ctx.lineTo(x,y+25);ctx.lineWidth=1.1;ctx.stroke();
-    }
-    ctx.restore();
-  }
   function streetDog(){
     const pose=world.pedestrianAt({from:980,to:1150,speed:17,pause:4,offset:7},state.time);
     ctx.save();ctx.translate(pose.x,streetY(pose.x)+3);ctx.scale(pose.direction,1);
@@ -344,7 +328,7 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.6';
     ctx.restore();
   }
   function drawActors(){
-    const layerOrigin=Math.floor(state.camera)-80,layerWidth=Math.ceil(state.width/state.scale)+160,density=Math.min(devicePixelRatio||1,2);
+    const layerOrigin=Math.floor(state.camera)-80,layerWidth=Math.ceil(state.width/state.scale)+160,density=Math.min((devicePixelRatio||1)*state.scale,4);
     if(actors.width!==Math.ceil(layerWidth*density)||actors.height!==H*density){actors.width=Math.ceil(layerWidth*density);actors.height=H*density;}
     actorContext.setTransform(1,0,0,1,0,0);actorContext.clearRect(0,0,actors.width,actors.height);actorContext.setTransform(density,0,0,density,-layerOrigin*density,0);
     ctx=actorContext;ctx.globalAlpha=.91;
@@ -367,8 +351,9 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.6';
     window.StreetDetails.draw(ctx,life.frame,range,inhabitants.storyHands);
     streetDog();
     if(!aboard()&&player.x>range[0]-60&&player.x<range[1]+60&&protagonist())umbrellaCount++;
-    painting.dataset.umbrellas=String(umbrellaCount);eraseFrontRailing();
+    painting.dataset.umbrellas=String(umbrellaCount);
     ctx=mainContext;ctx.drawImage(actors,0,0,actors.width,actors.height,layerOrigin,0,layerWidth,H);
+    window.BridgeRailing.draw(ctx,artwork,range[0],range[1]);
     districts.foreground(ctx,artwork,range[0],range[1]);
     window.BridgeArt.drawRope(ctx,crossing,towHand,state.time);
     // Small objects closest to the viewer pass in front of the moving figures.

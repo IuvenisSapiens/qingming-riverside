@@ -31,8 +31,10 @@
       this.stream=c.createGain();this.stream.gain.value=.055;
       stream.connect(streamFilter);streamFilter.connect(this.stream);this.stream.connect(this.master);stream.start();
       const fall=c.createBufferSource();fall.buffer=turbulence;fall.loop=true;fall.playbackRate.value=.83;
-      const fallLow=c.createBiquadFilter();fallLow.type='lowpass';fallLow.frequency.value=3200;
-      const fallHigh=c.createBiquadFilter();fallHigh.type='highpass';fallHigh.frequency.value=160;
+      // A small mill cascade: remove the bass roar and soften broadband hiss.
+      // This is a restrained synthetic bed until a recorded stream is supplied.
+      const fallLow=c.createBiquadFilter();fallLow.type='lowpass';fallLow.frequency.value=2500;
+      const fallHigh=c.createBiquadFilter();fallHigh.type='highpass';fallHigh.frequency.value=600;
       this.waterfall=c.createGain();this.waterfall.gain.value=0;
       this.fallPan=c.createStereoPanner();
       fall.connect(fallLow);fallLow.connect(fallHigh);fallHigh.connect(this.waterfall);
@@ -104,7 +106,7 @@
       const fallX=-1505.2,halfWidth=Math.max(1,width/2);
       const distance=Math.max(0,Math.abs(fallX-(camera+halfWidth))-halfWidth);
       const proximity=Math.exp(-distance/380);
-      this.waterfall.gain.setTargetAtTime(proximity*(.25+Math.sin(time*.61)*.025),now,.3);
+      this.waterfall.gain.setTargetAtTime(proximity*(.085+Math.sin(time*.61)*.012),now,.3);
       this.fallPan.pan.setTargetAtTime(Math.max(-1,Math.min(1,(fallX-camera-halfWidth)/halfWidth)),now,.3);
       const rowing=['sailing','approaching','departing','returning'].includes(ferry.mode);
       if(rowing&&ferry.x>camera-90&&ferry.x<camera+width+90&&time-this.lastStroke>2.1){
