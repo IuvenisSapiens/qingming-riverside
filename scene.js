@@ -943,7 +943,7 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.6';
   });
   document.querySelector('#sound').addEventListener('click',async()=>{
     const enabled=await sound.toggle();const b=document.querySelector('#sound');
-    b.setAttribute('aria-pressed',String(enabled));b.setAttribute('aria-label',enabled?'关闭水声':'开启水声');b.title=b.getAttribute('aria-label');
+    b.setAttribute('aria-pressed',String(enabled));b.setAttribute('aria-label',enabled?'关闭背景音乐与环境声':'开启背景音乐与环境声');b.title=b.getAttribute('aria-label');
     painting.dataset.sound=enabled?'on':'off';sound.setRunning(state.running&&!document.hidden);
   });
   document.querySelector('#follow').addEventListener('click',()=>{setFollow(true);state.target=cameraForPlayer();announce(aboard()?'镜头跟随船只':'镜头跟随行人');});

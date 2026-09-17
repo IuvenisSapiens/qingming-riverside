@@ -1,11 +1,13 @@
 (() => {
   'use strict';
   class InkSound {
-    constructor(){this.enabled=false;this.running=true;this.lastStroke=-Infinity;}
+    constructor(){this.enabled=false;this.running=true;this.lastStroke=-Infinity;this.rainLevel=0;this.musicLevel=.68;}
     async toggle(){
       try{
         if(!this.context)this.create();
-        await this.context.resume();this.enabled=!this.enabled;this.setRunning(this.running);
+        await this.context.resume();this.enabled=!this.enabled;
+        if(this.enabled&&this.running)await this.musicElement.play();
+        this.setRunning(this.running);
       }catch{this.enabled=false;}
       return this.enabled;
     }
@@ -17,28 +19,11 @@
       let brown=0;
       for(let i=0;i<data.length;i++){brown=(brown+Math.random()*.04-.02)/1.015;data[i]=brown*3;}
       this.master=c.createGain();this.master.gain.value=0;this.master.connect(c.destination);
-      const water=c.createBufferSource();water.buffer=noise;water.loop=true;
-      const low=c.createBiquadFilter();low.type='lowpass';low.frequency.value=680;
-      const high=c.createBiquadFilter();high.type='highpass';high.frequency.value=110;
-      this.water=c.createGain();this.water.gain.value=.38;
-      water.connect(low);low.connect(high);high.connect(this.water);this.water.connect(this.master);water.start();
-      // Independent bright turbulence complements the low river bed.
-      const turbulence=c.createBuffer(1,c.sampleRate*8,c.sampleRate);
-      const foam=turbulence.getChannelData(0);
-      for(let i=0;i<foam.length;i++)foam[i]=Math.random()*2-1;
-      const stream=c.createBufferSource();stream.buffer=turbulence;stream.loop=true;
-      const streamFilter=c.createBiquadFilter();streamFilter.type='bandpass';streamFilter.frequency.value=950;streamFilter.Q.value=.5;
-      this.stream=c.createGain();this.stream.gain.value=.055;
-      stream.connect(streamFilter);streamFilter.connect(this.stream);this.stream.connect(this.master);stream.start();
-      const fall=c.createBufferSource();fall.buffer=turbulence;fall.loop=true;fall.playbackRate.value=.83;
-      // A small mill cascade: remove the bass roar and soften broadband hiss.
-      // This is a restrained synthetic bed until a recorded stream is supplied.
-      const fallLow=c.createBiquadFilter();fallLow.type='lowpass';fallLow.frequency.value=2500;
-      const fallHigh=c.createBiquadFilter();fallHigh.type='highpass';fallHigh.frequency.value=600;
-      this.waterfall=c.createGain();this.waterfall.gain.value=0;
-      this.fallPan=c.createStereoPanner();
-      fall.connect(fallLow);fallLow.connect(fallHigh);fallHigh.connect(this.waterfall);
-      this.waterfall.connect(this.fallPan);this.fallPan.connect(this.master);fall.start(0,2.7);
+      this.musicElement=new window.Audio('pubuniaosheng.mp3');
+      this.musicElement.loop=true;this.musicElement.preload='auto';this.musicElement.playsInline=true;
+      this.music=c.createGain();this.music.gain.value=this.musicLevel;
+      this.musicSource=c.createMediaElementSource(this.musicElement);
+      this.musicSource.connect(this.music);this.music.connect(this.master);
       const rain=c.createBufferSource();rain.buffer=noise;rain.loop=true;
       const rainFilter=c.createBiquadFilter();rainFilter.type='bandpass';rainFilter.frequency.value=1850;rainFilter.Q.value=.34;
       this.rain=c.createGain();this.rain.gain.value=0;
@@ -46,7 +31,17 @@
     }
     setRunning(running){
       this.running=running;if(!this.context)return;
-      this.master.gain.setTargetAtTime(this.enabled&&running ? .32 : 0,this.context.currentTime,.15);
+      const active=this.enabled&&running,now=this.context.currentTime;
+      this.master.gain.setTargetAtTime(active ? .32 : 0,now,.15);
+      this.setMusicLevel(this.rainLevel,.35);
+      clearTimeout(this.pauseTimer);
+      if(active)this.musicElement.play().catch(()=>{});
+      else this.pauseTimer=setTimeout(()=>{if(!this.enabled||!this.running)this.musicElement.pause();},600);
+    }
+    setMusicLevel(rain,timeConstant){
+      if(!this.context)return;
+      const target=this.enabled&&this.running?this.musicLevel*Math.pow(1-rain,1.7):0;
+      this.music.gain.setTargetAtTime(target,this.context.currentTime,timeConstant);
     }
     noisePulse(pan,duration=.6,level=.22){
       if(!this.enabled||!this.running)return;
@@ -96,18 +91,14 @@
     }
     weather(sample){
       if(!this.context)return;
-      this.rain.gain.setTargetAtTime(this.enabled&&this.running?sample.rain*.72:0,this.context.currentTime,.35);
+      const previous=this.rainLevel;this.rainLevel=Math.max(0,Math.min(1,sample.rain));
+      this.rain.gain.setTargetAtTime(this.enabled&&this.running?this.rainLevel*.72:0,this.context.currentTime,.35);
+      // Let the recorded background recede behind the original rain bed, then
+      // return more slowly as the shower clears.
+      this.setMusicLevel(this.rainLevel,this.rainLevel>previous?2.2:4.2);
     }
     update(time,running,ferry,camera,width){
       if(!this.enabled||!running)return;
-      const now=this.context.currentTime;
-      this.water.gain.setTargetAtTime(.38+Math.sin(time*.47)*.065,now,.5);
-      this.stream.gain.setTargetAtTime(.065+Math.sin(time*.73)*.014,now,.5);
-      const fallX=-1505.2,halfWidth=Math.max(1,width/2);
-      const distance=Math.max(0,Math.abs(fallX-(camera+halfWidth))-halfWidth);
-      const proximity=Math.exp(-distance/380);
-      this.waterfall.gain.setTargetAtTime(proximity*(.085+Math.sin(time*.61)*.012),now,.3);
-      this.fallPan.pan.setTargetAtTime(Math.max(-1,Math.min(1,(fallX-camera-halfWidth)/halfWidth)),now,.3);
       const rowing=['sailing','approaching','departing','returning'].includes(ferry.mode);
       if(rowing&&ferry.x>camera-90&&ferry.x<camera+width+90&&time-this.lastStroke>2.1){
         this.noisePulse((ferry.x-camera)/width*2-1,.85,.24);this.lastStroke=time;
