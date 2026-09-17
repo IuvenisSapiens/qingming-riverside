@@ -4,7 +4,11 @@
 
 **公开源码：[qingming-riverside](https://github.com/xianxie6/qingming-riverside)**
 
-**在线体验：[打开画卷](https://qingming-riverside-nine.vercel.app/)**
+**在线体验：[打开画卷](https://xianxie6.github.io/qingming-riverside/)**
+
+备用入口：[Vercel](https://qingming-riverside-nine.vercel.app/)。
+
+GitHub Pages 从 master 分支自动发布；推送代码后可在仓库 Actions 中查看发布状态。Vercel 为独立部署，更新时运行 `vercel deploy --prod`。
 
 无需安装或登录，支持电脑与手机浏览器。画面为原创生成插画，不是《清明上河图》原画扫描。
 
