@@ -1,4 +1,25 @@
 :root{color-scheme:light;--paper:#e2d4b6;--ink:#504d3d;--line:rgba(80,77,61,.23)}
+#visitCounter{position:fixed;top:max(22px,env(safe-area-inset-top));right:max(24px,env(safe-area-inset-right));z-index:30;display:flex;align-items:baseline;gap:9px;padding:7px 10px;color:#6a5b43;background:rgba(231,217,187,.78);border:1px solid rgba(117,106,79,.22);backdrop-filter:blur(6px);font-family:"Songti SC","Noto Serif SC",serif;letter-spacing:.12em;pointer-events:none}
+#visitCounter span{font-size:10px;opacity:.72}#visitCounter strong{font-size:16px;font-weight:400;letter-spacing:.08em;font-variant-numeric:tabular-nums}
+#visitCounter[data-state="error"]{display:none}
+#atlas{position:fixed;inset:0;z-index:20;background:#e2d4b6;display:flex;flex-direction:column;justify-content:center;overflow:hidden;color:#504d3d}
+.atlas-heading{text-align:center;margin:0 0 clamp(20px,4vh,48px);transition:opacity .35s}
+.atlas-heading>span{font:11px "Songti SC",serif;letter-spacing:.5em;color:#827152}
+.atlas-heading h1{font:400 clamp(28px,4vw,52px) "Songti SC",serif;letter-spacing:.38em;margin:14px 0 12px;padding-left:.38em}
+.atlas-heading p{font-size:12px;letter-spacing:.3em;opacity:.7}
+#atlasFrame{position:relative;width:100%;flex:none;cursor:crosshair;will-change:transform}
+#atlasImage{display:block;width:100%;height:auto;user-select:none;mix-blend-mode:multiply}
+#atlasPlaces{position:absolute;inset:0}
+#atlasPlaces button{position:absolute;left:var(--u);top:66%;transform:translate(-50%,-50%);width:auto;height:auto;padding:12px 8px;border:0;border-radius:0;background:#e6d8bcca;color:#454d3d;font:13px "Songti SC",serif;letter-spacing:.15em;white-space:nowrap;opacity:0;transition:opacity .3s}
+#atlasFrame:hover #atlasPlaces button,#atlasPlaces button:focus-visible{opacity:1}
+#atlasPlaces button:hover{background:#f2e5c9;box-shadow:0 0 25px #72a69d55}
+#atlasMessage{margin:32px 0 0;text-align:center;font:12px "Songti SC",serif;letter-spacing:.2em;opacity:.65;transition:opacity .3s}
+#atlasInk{position:absolute;inset:0;width:100%;height:100%;opacity:1;pointer-events:none}
+#atlas.entering .atlas-heading,#atlas.entering #atlasMessage,#atlas.entering #atlasPlaces{opacity:0;pointer-events:none}
+#atlasReturn{position:fixed;top:22px;left:24px;z-index:6;width:58px;height:38px;padding:5px;white-space:nowrap;border:1px solid #756a4f55;border-radius:20px;background:#e7d9bbcf;color:#504d3d;font:13px "Songti SC",serif;letter-spacing:.1em}
+body.in-atlas>.controls,body.in-atlas>.corner-controls,body.in-atlas>.district-stops,body.in-atlas>#position,body.in-atlas>#follow{visibility:hidden}
+@media(max-width:600px){.atlas-heading{margin-bottom:60px}#atlasMessage{font-size:11px;letter-spacing:.08em;margin-top:55px}#atlasPlaces button{top:105%;font-size:10px;padding:8px 3px;letter-spacing:0;opacity:1}#atlasPlaces button:first-child{left:12%}#atlasPlaces button:last-child{left:88%}}
+@media(prefers-reduced-motion:reduce){#atlasFrame{will-change:auto}}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--paper)}
@@ -72,3 +93,47 @@ body.ready .district-stops{opacity:.6}
 @media(max-width:600px){.controls{gap:2px;padding-inline:5px}#bridgeStart,#weatherStart{width:60px;padding:5px;font-size:12px}#towMemo{left:52px;bottom:34px;width:34px;height:34px;padding:7px}#bridgeSketch{padding:14px}}
 
 @media(max-width:600px){#hailFerry{width:48px;padding:5px;font-size:12px}.controls{max-width:calc(100vw - 14px)}}
+
+/* Night remains a reversible scene control, including while motion is paused. */
+#nightToggle{width:74px;grid-template-columns:24px auto;gap:3px;padding:7px 8px;border-left:1px solid var(--line);border-radius:0;font-size:13px;font-family:inherit}
+#nightToggle span{white-space:nowrap;font:13px "Songti SC",serif}
+body{transition:color 8s,background 8s}
+body.night{--ink:#e8d5ae;--line:rgba(225,198,151,.25);--paper:#273447}
+body.night .controls,body.night .corner-controls{background:#172638b8;border-color:#dfbe7c30}
+body.night #nightToggle{color:#ffda91;background:#e7b35920}
+body.night button:hover{background:#e8c48320}
+body.night .district-stop::after{background:#d2b078;border-color:#ecd29a}
+@media(max-width:600px){#nightToggle{width:58px;padding:5px} .controls{gap:0;padding-inline:3px}.controls>button{flex-shrink:0}.controls>button:is(#left,#play,#right){width:34px;padding:6px}#bridgeStart,#weatherStart{width:54px}#hailFerry{width:44px}}
+
+.controls,.corner-controls{transition:opacity .7s,background 8s,border-color 8s}
+@media(max-width:360px){.controls>button:is(#left,#play,#right){width:30px}#nightToggle{width:54px}#bridgeStart,#weatherStart{width:52px}}
+
+/* Registered panorama tour. Stage, draft and hotspots share image coordinates. */
+#atlas{display:grid;grid-template-rows:auto minmax(0,1fr) auto auto;gap:16px;padding:32px 24px 22px;background:#e2d4b6}
+#atlas[hidden]{display:none}
+.atlas-heading{margin:0}.atlas-heading h1{font-size:36px;margin:10px 0}.atlas-heading p{margin:0}
+#atlasStage{position:relative;min-height:0;overflow:hidden;width:100%;align-self:stretch}
+#atlasFrame{position:absolute;left:0;top:0;width:2172px;height:724px;transform-origin:0 0;transition:transform 1050ms cubic-bezier(.22,.65,.2,1);cursor:default}
+#atlasImage{width:2172px;height:724px;mix-blend-mode:normal}
+#atlasDraft{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.draft-region{opacity:0;transition:opacity 420ms ease-in-out}.draft-region.revealed{opacity:1;transition-duration:580ms}
+#atlasFrame .atlas-hotspot{position:absolute;display:block;min-width:0;min-height:0;padding:0;border:0;border-radius:18px;background:transparent;box-shadow:none;cursor:pointer;color:#67573e}
+#atlasFrame .atlas-hotspot:focus-visible{outline:2px dashed #67573e;outline-offset:8px}
+#atlasPlaces{position:relative;inset:auto;display:flex;justify-content:center;gap:clamp(12px,4vw,70px);z-index:2}
+#atlasPlaces .atlas-label{position:relative;left:auto;top:auto;transform:none;opacity:1;display:grid;grid-template-columns:auto auto;gap:4px 9px;padding:10px 12px;background:transparent;color:#695c47;border-radius:0;box-shadow:none;font:15px 'Songti SC',serif;letter-spacing:.12em;min-height:60px}
+#atlasPlaces small{font-size:10px;align-self:center;opacity:.6}#atlasPlaces em{grid-column:2;font-size:10px;font-style:normal;opacity:0;transition:opacity .4s}
+#atlasPlaces .preview,#atlasPlaces [aria-current=true]{color:#392d20;background:#f0e3c666}
+#atlasPlaces .preview em{opacity:.8}#atlasPlaces button:focus-visible{outline:1px solid #746449;outline-offset:3px}
+#atlasMessage{margin:0;font-size:11px;min-height:16px;letter-spacing:.12em}
+#atlasOverview{position:absolute;right:28px;top:35px;width:auto;height:auto;padding:10px 16px;border:1px solid #88735155;border-radius:2px;background:#eee0c4;color:#574a36;font:13px 'Songti SC',serif}
+#atlas.inspecting{grid-template-rows:auto minmax(0,1fr) 125px auto auto}
+#atlasCard{grid-row:3;justify-self:center;width:min(620px,100%);padding:10px 20px;border-top:1px solid #87734b55;text-align:center;box-sizing:border-box}
+#atlasCard[hidden]{display:none}#atlas.inspecting #atlasPlaces{grid-row:4}#atlas.inspecting #atlasMessage{grid-row:5}
+.atlas-kicker{font-size:9px;letter-spacing:.3em;color:#857151}#atlasCard h2{font:400 23px 'Songti SC',serif;margin:5px 0}#atlasCard p{font:12px/1.8 'Songti SC',serif;margin:0;color:#726149}
+#atlasLive{width:auto;height:auto;border:0;border-bottom:1px solid #9a856355;border-radius:0;background:transparent;font:11px 'Songti SC',serif;color:#766046;margin-top:8px;padding:3px 0}
+@media(max-width:600px){#atlas{padding:24px 12px 18px;gap:12px}.atlas-heading h1{font-size:28px}.atlas-heading>span{font-size:9px}.atlas-heading p{font-size:10px}#atlasPlaces{display:grid;grid-template-columns:1fr 1fr;gap:6px 18px}#atlasPlaces .atlas-label{font-size:13px;min-height:44px;padding:8px;justify-content:center}#atlasPlaces em{display:none}#atlasMessage{font-size:10px;letter-spacing:0}#atlasOverview{position:relative;grid-row:2;justify-self:center;right:auto;top:auto;padding:6px 14px}#atlas.inspecting{grid-template-rows:auto auto minmax(0,1fr) 140px auto auto}#atlas.inspecting #atlasCard{grid-row:4}#atlas.inspecting #atlasPlaces{grid-row:5}#atlas.inspecting #atlasMessage{grid-row:6}#atlasCard{padding:8px 4px}#atlasCard p{font-size:12px}}
+@media(prefers-reduced-motion:reduce){#atlasFrame,.draft-region,#atlasPlaces em{transition:none}}
+#atlas:not(.inspecting) #atlasPlaces{grid-row:3}#atlas:not(.inspecting) #atlasMessage{grid-row:4}
+@media(max-width:600px){#atlasPlaces .atlas-label:first-child,#atlasPlaces .atlas-label:last-child{left:auto}.atlas-heading{margin-bottom:0}}
+@media(max-width:600px){#visitCounter{top:max(12px,env(safe-area-inset-top));right:max(12px,env(safe-area-inset-right));padding:5px 7px;gap:6px}#visitCounter span{font-size:9px}#visitCounter strong{font-size:13px}}
+#atlas{grid-template-columns:minmax(0,1fr);justify-content:stretch}

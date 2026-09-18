@@ -5,10 +5,12 @@
 node_modules/
 *.log
 .vercel/
+.wrangler/
+.dev.vars
 .playwright-cli/
 output/
+dist/
 design-qa.md
 PROGRESS.md
 启动画卷.command
 清明上河图-推特长文-banner.png
-.vercel

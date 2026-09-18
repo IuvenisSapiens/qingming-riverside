@@ -1,0 +1,80 @@
+(() => {
+  'use strict';
+  // All geometry is authored in the original panorama's 2172 × 724 coordinates.
+  const W=2172,H=724,NS='http://www.w3.org/2000/svg';
+  const places=[
+    {id:'mill',name:'水磨作坊',box:[76,298,244,174],label:[210,514],world:-1550,description:'水轮随汴水转动，磨坊与作坊临河而立。岸边车马往来，日常生计在水声中展开。'},
+    {id:'tea',name:'沿河茶市',box:[470,232,397,252],label:[665,528],world:650,description:'茶肆沿河相接，檐下摆开桌案。商旅在这里歇脚饮茶，也把远方的消息带入街市。'},
+    {id:'bridge',name:'虹桥烟火',box:[861,283,493,212],label:[1100,561],world:1560,description:'虹桥飞架汴河，两岸人流在桥头交汇。船只穿行桥下，水路与街市在此相逢。'},
+    {id:'gate',name:'城门货市',box:[1680,75,488,445],label:[1908,567],world:3360,description:'城楼俯瞰繁忙的货市，车马从城门出入。临河货栈与摊铺相连，汇聚汴京的日用百货。'}
+  ];
+  const atlas=document.querySelector('#atlas'),frame=document.querySelector('#atlasFrame'),img=document.querySelector('#atlasImage'),message=document.querySelector('#atlasMessage');
+  const reduced=matchMedia('(prefers-reduced-motion: reduce)');
+  const stage=document.createElement('div');stage.id='atlasStage';frame.before(stage);stage.append(frame);
+  const nav=document.querySelector('#atlasPlaces');nav.replaceChildren();atlas.append(nav);nav.setAttribute('aria-label','长卷景点');nav.setAttribute('role','navigation');
+  document.querySelector('#atlasInk').remove();
+  const svg=document.createElementNS(NS,'svg');svg.id='atlasDraft';svg.setAttribute('viewBox',`0 0 ${W} ${H}`);svg.setAttribute('aria-hidden','true');frame.append(svg);
+  const defs=document.createElementNS(NS,'defs');svg.append(defs);
+  // Full-size registered artwork only. Missing artwork never falls back to a filter.
+  const layers=new Map();let draftReady=false,selected=null,hovered=null,focused=null,revision=0,lastTrigger=null;
+  const card=document.createElement('article');card.id='atlasCard';card.hidden=true;card.innerHTML='<span class="atlas-kicker">汴河拾景</span><h2></h2><p></p><button id="atlasLive">走入动态街市 ↗</button>';atlas.append(card);
+  const back=document.createElement('button');back.id='atlasOverview';back.textContent='← 退回长卷';back.hidden=true;atlas.append(back);
+  function element(tag,attrs,parent){const el=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs))el.setAttribute(k,v);parent.append(el);return el;}
+  for(const [i,p] of places.entries()){
+    const [x,y,w,h]=p.box;
+    const mask=element('mask',{id:`draft-${p.id}`,maskUnits:'userSpaceOnUse',x:0,y:0,width:W,height:H},defs);
+    const filter=element('filter',{id:`paper-${p.id}`,x:'-5%',y:'-5%',width:'110%',height:'110%'},defs);
+    element('feTurbulence',{type:'fractalNoise',baseFrequency:'.045',numOctaves:3,seed:i+2,result:'grain'},filter);
+    element('feDisplacementMap',{in:'SourceGraphic',in2:'grain',scale:5,xChannelSelector:'R',yChannelSelector:'G'},filter);
+    element('rect',{x:x-12,y:y-12,width:w+24,height:h+24,rx:24,fill:'white',filter:`url(#paper-${p.id})`},mask);
+    const layer=element('g',{mask:`url(#draft-${p.id})`,class:'draft-region'},svg);
+    const art=element('image',{x:0,y:0,width:W,height:H,preserveAspectRatio:'none'},layer);layers.set(p.id,{layer,art});
+    const hotspot=document.createElement('button');hotspot.className='atlas-hotspot';hotspot.dataset.place=p.id;hotspot.setAttribute('aria-label',`${p.name}，点击入画`);hotspot.style.cssText=`left:${x/W*100}%;top:${y/H*100}%;width:${w/W*100}%;height:${h/H*100}%`;frame.append(hotspot);
+    const label=document.createElement('button');label.className='atlas-label';label.dataset.place=p.id;label.innerHTML=`<small>0${i+1}</small><span>${p.name}</span><em>点击入画</em>`;nav.append(label);
+    for(const button of [hotspot,label]){
+      button.addEventListener('pointerenter',e=>{if(e.pointerType!=='touch'){hovered=p.id;preview();}});
+      button.addEventListener('pointerleave',()=>{hovered=null;preview();});
+      button.addEventListener('focus',()=>{focused=p.id;preview();});
+      button.addEventListener('blur',()=>{focused=null;preview();});
+      button.addEventListener('click',()=>enter(p,button));
+    }
+  }
+  function preview(){
+    const id=selected?null:(hovered||focused);
+    for(const p of places){layers.get(p.id).layer.classList.toggle('revealed',draftReady&&id===p.id);for(const b of document.querySelectorAll(`[data-place="${p.id}"]`))b.classList.toggle('preview',id===p.id);}
+    message.textContent=selected?'可直接切换景点 · Esc 退回长卷':id&&!draftReady?'建筑底稿素材待补齐 · 点击可入画游览':(draftReady?'移笔游目，点景入画':'移笔游目，点景入画 · 建筑底稿待补齐');
+  }
+  function layout(){
+    const r=stage.getBoundingClientRect();if(!r.width||!r.height)return;
+    let scale=Math.min(r.width/W,r.height/H),tx=(r.width-W*scale)/2,ty=(r.height-H*scale)/2;
+    if(selected){const [x,y,w,h]=selected.box,pad=Math.min(40,r.width*.06);scale=Math.min((r.width-pad*2)/w,(r.height-pad*2)/h);tx=r.width/2-(x+w/2)*scale;ty=r.height/2-(y+h/2)*scale;}
+    frame.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`;
+    atlas.dataset.place=selected?.id||'overview';
+  }
+  async function enter(p,button){
+    const token=++revision;lastTrigger=button;selected=p;hovered=null;focused=null;preview();card.hidden=true;back.hidden=false;
+    for(const b of nav.children)b.setAttribute('aria-current',String(b.dataset.place===p.id));
+    // Give the color layer time to return before camera movement.
+    await new Promise(r=>setTimeout(r,reduced.matches?0:420));if(token!==revision)return;
+    atlas.classList.add('inspecting');layout();await new Promise(r=>setTimeout(r,reduced.matches?0:1050));if(token!==revision)return;
+    card.querySelector('h2').textContent=p.name;card.querySelector('p').textContent=p.description;card.hidden=false;
+    message.textContent=`已到达${p.name} · Esc 退回长卷`;
+  }
+  function overview(){++revision;selected=null;hovered=null;focused=null;card.hidden=true;back.hidden=true;atlas.classList.remove('inspecting');for(const b of nav.children)b.removeAttribute('aria-current');layout();preview();lastTrigger?.focus({preventScroll:true});}
+  back.addEventListener('click',overview);
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!atlas.hidden){e.preventDefault();overview();}});
+  function isolate(on){for(const el of document.body.children)if(el!==atlas&&el.tagName!=='SCRIPT')el.inert=on;document.querySelector('#atlasReturn').hidden=on;}
+  document.querySelector('#atlasLive').addEventListener('click',()=>{if(!selected||!document.body.classList.contains('ready'))return;window.dispatchEvent(new CustomEvent('atlas-enter',{detail:{x:selected.world}}));atlas.hidden=true;document.body.classList.remove('in-atlas');isolate(false);document.querySelector('#painting').focus();});
+  document.querySelector('#atlasReturn').addEventListener('click',()=>{atlas.hidden=false;document.body.classList.add('in-atlas');isolate(true);overview();});
+  const load=()=>{if(img.naturalWidth!==W||img.naturalHeight!==H){message.textContent='原图尺寸已改变，请重新校准景点坐标';return;}layout();preview();};
+  img.addEventListener('load',load);img.addEventListener('error',()=>{message.textContent='画卷加载失败，请刷新重试';});if(img.complete&&img.naturalWidth)load();
+  new ResizeObserver(layout).observe(stage);reduced.addEventListener('change',layout);isolate(true);
+  // Optional replacement must have exactly the same canvas, crop and registration.
+  fetch('assets/atlas-draft.json').then(r=>r.json()).then(async manifest=>{
+    if(!manifest.src)return;
+    const draft=new Image();draft.src=manifest.src;await draft.decode();
+    if(draft.naturalWidth!==W||draft.naturalHeight!==H)throw Error('Draft dimensions do not match panorama');
+    for(const {art} of layers.values())art.setAttribute('href',manifest.src);draftReady=true;preview();
+  }).catch(error=>console.warn('Aligned atlas draft unavailable:',error));
+  window.AtlasTour={places,layout,get selected(){return selected?.id||null;}};
+})();

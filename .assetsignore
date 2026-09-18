@@ -1,0 +1,14 @@
+.git/
+.github/
+.playwright-cli/
+.wrangler/
+node_modules/
+output/
+migrations/
+*.test.cjs
+*.md
+package.json
+package-lock.json
+vercel.json
+worker.js
+wrangler.jsonc

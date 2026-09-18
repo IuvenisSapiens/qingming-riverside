@@ -6,9 +6,21 @@
   <meta name="theme-color" content="#e2d4b6">
   <title>清明上河</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="style.css?v=11.0">
+  <link rel="stylesheet" href="style.css?v=15">
 </head>
-<body>
+<body class="in-atlas">
+  <aside id="visitCounter" aria-live="polite" aria-label="网站总访问次数">
+    <span>入画人次</span><strong id="visitCount">—</strong>
+  </aside>
+  <section id="atlas" aria-label="全景入画" aria-describedby="atlasHint">
+    <header class="atlas-heading"><span>汴河 · 一日千年</span><h1>清明上河</h1><p id="atlasHint">移笔游目，点景入画</p></header>
+    <div id="atlasFrame"><img id="atlasImage" src="assets/qingming-panorama-v1.png" alt="从水磨作坊、沿河茶市，经虹桥到城门货市的全景长卷" draggable="false"><div id="atlasPlaces">
+      <button data-u="0.1" style="--u:10%" aria-label="进入水磨作坊">水磨作坊</button><button data-u="0.33" style="--u:33%" aria-label="进入沿河茶市">沿河茶市</button><button data-u="0.52" style="--u:52%" aria-label="进入虹桥">虹桥烟火</button><button data-u="0.92" style="--u:92%" aria-label="进入城门货市">城门货市</button>
+    </div></div>
+    <p id="atlasMessage" role="status">正在展开画卷…</p>
+    <canvas id="atlasInk" aria-hidden="true"></canvas>
+  </section>
+  <button id="atlasReturn" aria-label="返回全景选景" title="全景选景" hidden>全景</button>
   <main id="painting" tabindex="0" aria-label="清明上河街市，左右方向键控制行人，点击街道前往，拖动浏览，空格暂停，双击放大，E键在茶铺、桥头或码头互动">
     <canvas id="scene" role="img" aria-label="宋代沿河街市立面，茶楼、食铺、木桥，食客、摊贩、行人与船只在画中移动"></canvas>
     <button id="tea" class="scene-action" aria-label="到茶铺饮茶"><span aria-hidden="true"></span></button>
@@ -27,6 +39,7 @@
     <button id="play" aria-label="自动行走" title="自动行走"><svg viewBox="0 0 24 24"><path d="m9 6 9 6-9 6Z"/></svg></button>
     <button id="right" aria-label="向右走" title="向右走"><svg viewBox="0 0 24 24"><path d="m10 6 6 6-6 6"/></svg></button>
     <button id="hailFerry" aria-label="招手乘船" title="招手乘船"><span>招船</span></button>
+    <button id="nightToggle" aria-label="切换夜景" title="夜景 · 万家灯火" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M19.5 15.4A8.2 8.2 0 0 1 8.6 4.5 8.4 8.4 0 1 0 19.5 15.4Z"/><path d="M17 3v4m-2-2h4"/></svg><span>夜景</span></button>
     <button id="weatherStart" aria-label="体验清明时雨" title="清明时雨"><svg viewBox="0 0 28 24"><path d="M6 13q-3 0-3-3t3-3q1-4 5-4 4 0 5 3 4-1 6 2t-1 5H6Zm3 3-2 4m7-4-2 4m7-4-2 4"/></svg><span>时雨</span></button>
     <button id="bridgeStart" aria-label="体验虹桥过船" title="虹桥过船"><svg viewBox="0 0 28 24"><path d="M3 16q11 10 22 0H3Zm11-12v12M5 11q9-13 18 0"/></svg><span>过船</span></button>
   </nav>
@@ -41,8 +54,10 @@
   </div>
   <nav class="district-stops" aria-label="街区位置"><button class="district-stop" data-x="-1550" aria-label="浏览水磨作坊" title="水磨作坊"></button><button class="district-stop" data-x="650" aria-label="浏览茶市" title="茶市"></button><button class="district-stop" data-x="1560" aria-label="浏览虹桥" title="虹桥"></button><button class="district-stop" data-x="3360" aria-label="浏览城门货市" title="城门货市"></button></nav>
   <input id="position" aria-label="画卷位置" type="range" min="0" max="1000" value="0">
+  <script src="visits.js?v=1" defer></script>
   <script src="world.js?v=8.2"></script>
   <script src="bridge-railing.js?v=1"></script>
+  <script src="night.js?v=1.3"></script>
   <script src="weather.js?v=10.5"></script>
   <script src="sound.js?v=10.5"></script>
   <script src="water.js?v=1.3"></script>
@@ -58,6 +73,7 @@
   <script src="inhabitants.js?v=10.6"></script>
   <script src="featured-characters.js?v=7.3"></script>
   <script src="districts.js?v=5.4"></script>
-  <script type="module" src="scene.js?v=12.9"></script>
+  <script src="atlas.js?v=2"></script>
+  <script type="module" src="scene.js?v=14"></script>
 </body>
 </html>

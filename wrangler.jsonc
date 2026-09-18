@@ -1,0 +1,24 @@
+{
+	"$schema": "./node_modules/wrangler/config-schema.json",
+	"name": "qingming-riverside",
+	"main": "worker.js",
+	"compatibility_date": "2026-09-18",
+	"assets": {
+		"directory": "./dist",
+		"binding": "ASSETS",
+		"run_worker_first": [
+			"/api/*"
+		]
+	},
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "qingming-riverside-visits",
+			"database_id": "571e7878-5c8e-4af8-af1e-e99705b824e0",
+			"migrations_dir": "migrations"
+		}
+	],
+	"observability": {
+		"enabled": true
+	}
+}

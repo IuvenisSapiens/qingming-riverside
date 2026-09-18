@@ -1,0 +1,13 @@
+{
+  "name": "qingming-riverside",
+  "private": true,
+  "scripts": {
+    "build": "node build-static.mjs",
+    "dev": "npm run build && wrangler dev",
+    "check": "npm run build && wrangler deploy --dry-run",
+    "deploy": "npm run build && wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.134.0"
+  }
+}

@@ -3,7 +3,10 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.6';
 (() => {
   'use strict';
   const canvas = document.querySelector('#scene');
-  const mainContext = canvas.getContext('2d', { alpha: false });
+  const displayContext = canvas.getContext('2d', { alpha: false });
+  let mainContext=displayContext;
+  const nightForeground=document.createElement('canvas');
+  const nightForegroundContext=nightForeground.getContext('2d');
   let ctx=mainContext;
   const population=window.ScrollPopulation;
   const movement=window.ScrollMovement;
@@ -32,6 +35,8 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.6';
   const ferry=world.createFerry();
   let life;
   const crossing=new window.BridgeStory.Crossing();
+  const nightfall=new window.QingmingNight.Nightfall();
+  let nightLevel=0;
   const rainEvent=new window.QingmingWeather.RainEvent();
   let weatherSample=rainEvent.sample();
   const towRope=document.querySelector('#towRope'),towGrip=document.querySelector('#towGrip');
@@ -337,16 +342,20 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.6';
     inhabitants.draw(ctx,state.time,range,streetY,(p,t)=>life.walkerAt(p,t),person,
       ()=>districts.furniture(ctx,artwork,range[0],range[1]),life.frame,(item,result)=>{
         if(window.QingmingWeather.drawUmbrella(ctx,weatherSample,item,result))umbrellaCount++;
-      });
+      },(p,kind)=>window.QingmingNight.crowdPresence(nightLevel,p,kind));
     for(const p of pedestrians){
       const pose=life.walkerAt(p,state.time);
       if(pose.x<range[0]-85||pose.x>range[1]+85)continue;
+      const presence=window.QingmingNight.crowdPresence(nightLevel,p,'walker');
+      if(presence<=.01)continue;
+      ctx.save();ctx.globalAlpha*=presence;
       let result,x=pose.x,y=streetY(pose.x);
       if(p.cart){result=cart(pose);x=pose.x-pose.direction*30;y=streetY(x);}
       else if(p.carry)result=carrier(p,pose);
       else result=person(x,y,p.s,pose.phase,pose.direction,p.c,pose.moving,streetY);
       const item={p:{...p,h:pedestrianHeight(p.s)},x,y,direction:pose.direction};
       if(window.QingmingWeather.drawUmbrella(ctx,weatherSample,item,result))umbrellaCount++;
+      ctx.restore();
     }
     window.StreetDetails.draw(ctx,life.frame,range,inhabitants.storyHands);
     streetDog();
@@ -730,6 +739,19 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.6';
       const layer=threeWater.render({time:t,camera,viewY:state.viewY,width,height,scale,source:canvas});
       ctx.save();ctx.globalAlpha=.92;ctx.drawImage(layer,camera,state.viewY,width/scale,height/scale);ctx.restore();
     }else drawRiverSurface(t,camera-50,camera+width/scale+50);
+    // Light the architecture first. All people, furniture masks, boats and
+    // weather then share a transparent foreground that occludes those lights.
+    if(nightLevel>0){
+      window.QingmingNight.draw(ctx,nightLevel,visibleRange,t,reduced.matches);
+      window.QingmingNight.drawSky(ctx,nightLevel,visibleRange,t,reduced.matches,weatherSample.gloom+weatherSample.rain*.5);
+      if(nightForeground.width!==canvas.width||nightForeground.height!==canvas.height){
+        nightForeground.width=canvas.width;nightForeground.height=canvas.height;
+      }
+      nightForegroundContext.setTransform(1,0,0,1,0,0);
+      nightForegroundContext.clearRect(0,0,nightForeground.width,nightForeground.height);
+      nightForegroundContext.setTransform(ctx.getTransform());
+      mainContext=nightForegroundContext;ctx=mainContext;
+    }
     ctx.globalAlpha=.93;
     if(crossing.visible&&camera<1930&&camera+width/scale>1240)window.BridgeArt.drawShip(ctx,crossing,boatSprite,inhabitants,characters,t);
     teaService();pennant();drawBirds();westLanding();drawActors();districts.animate(ctx,t,camera,camera+width/scale,threeWater.active);drawTouchRipples();
@@ -757,6 +779,13 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.6';
     window.StreetDetails.breeze(ctx,life.frame,[camera,camera+width/scale]);
     steam(298,439,t);steam(404,446,t+2);steam(876,444,t+1);
     window.QingmingWeather.drawRain(ctx,weatherSample,visibleRange,H,reduced.matches);
+    if(nightLevel>0){
+      // Source-atop tints existing foreground pixels without filling its
+      // transparent gaps, so the lit windows remain behind each silhouette.
+      window.QingmingNight.drawAtmosphere(ctx,nightLevel,visibleRange,'source-atop');
+      mainContext=displayContext;ctx=displayContext;ctx.globalAlpha=1;
+      ctx.drawImage(nightForeground,camera,state.viewY,width/scale,height/scale);
+    }
     ctx.restore();ctx.globalAlpha=1;
     if(!storyShot&&crossing.stage==='guide'&&crossing.progress>.25)captureStory();
     // DOM controls and diagnostic attributes do not need to invalidate layout
@@ -841,6 +870,8 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.6';
           frameSample.elapsed=0;frameSample.count=0;frameSample.slow=0;
         }
       }
+      nightLevel=nightfall.step(dt,reduced.matches);
+      painting.dataset.night=nightLevel.toFixed(3);
       state.uiTime+=dt;if(state.running)state.time+=dt;
       updatePlayer(dt,walkInput.direction);
       crossing.step(state.running?dt:0,{arriving:player.pending==='tow'});
@@ -937,6 +968,16 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.6';
   document.querySelector('#zoom').addEventListener('click',()=>zoomAt(state.zoom>1.05?1:1.65));
   document.querySelector('#ferryRide').addEventListener('click',board);
   hailFerry.addEventListener('click',callNearestFerry);
+  document.querySelector('#nightToggle').addEventListener('click',()=>{
+    const active=nightfall.toggle(),button=document.querySelector('#nightToggle');
+    sound.setNight(active);
+    button.setAttribute('aria-pressed',String(active));
+    button.setAttribute('aria-label',active?'切换白天':'切换夜景');
+    button.title=active?'白天 · 晨光熹微':'夜景 · 万家灯火';
+    button.querySelector('span').textContent=active?'白天':'夜景';
+    document.body.classList.toggle('night',active);
+    announce(active?'暮色渐浓，沿街人家与商铺次第亮灯':'灯火渐隐，画卷缓缓回到白天');
+  });
   document.querySelector('#weatherStart').addEventListener('click',()=>{
     if(rainEvent.active){announce(`清明时雨：${weatherSample.label}`);return;}
     rainEvent.start();weatherSample=rainEvent.sample();resume();announce('河面起风，云气渐低');
@@ -949,6 +990,7 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.6';
   document.querySelector('#follow').addEventListener('click',()=>{setFollow(true);state.target=cameraForPlayer();announce(aboard()?'镜头跟随船只':'镜头跟随行人');});
   for(const id of Object.keys(spots))document.getElementById(id).addEventListener('click',e=>{if(e.detail===0)activateSpot(id);});
   document.addEventListener('keydown',e=>{
+    if(document.body.classList.contains('in-atlas'))return;
     if(document.querySelector('#bridgeSketch').open)return;
     if(e.target instanceof HTMLInputElement)return;
     if(crossing.joined&&['ArrowLeft','ArrowRight','KeyE'].includes(e.code)){e.preventDefault();towLatch=false;resume();crossing.pull(e.code==='ArrowRight'?.22:.56);return;}
@@ -988,9 +1030,15 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.6';
   document.querySelector('#saveSketch').addEventListener('click',()=>{if(!savedSketch)return;const a=document.createElement('a');a.href=savedSketch.image;a.download='虹桥过船.jpg';a.click();});
   reduced.addEventListener('change',e=>{state.running=!e.matches;if(e.matches)stopAuto();updateMotion();});
   addEventListener('resize',resize);
-  const loadError=()=>{document.querySelector('#loading').hidden=true;document.querySelector('#loading').style.display='none';document.querySelector('#error').hidden=false;};
+  window.addEventListener('atlas-enter',e=>{
+    if(!state.loaded)return;
+    zoomAt(1);browse();
+    state.camera=state.target=clamp(e.detail.x-state.width*.5/state.scale,MIN,state.max);
+    painting.dataset.entryX=String(e.detail.x);
+  });
+  const loadError=()=>{document.querySelector('#loading').hidden=true;document.querySelector('#loading').style.display='none';document.querySelector('#error').hidden=false;window.dispatchEvent(new Event('atlas-error'));};
   artwork.onload=async()=>{
-    try{await districts.load();districts.prepare(artwork);state.loaded=true;document.body.classList.add('ready');}
+    try{await districts.load();districts.prepare(artwork);state.loaded=true;document.body.classList.add('ready');window.dispatchEvent(new Event('atlas-ready'));}
     catch{loadError();}
   };
   artwork.onerror=loadError;

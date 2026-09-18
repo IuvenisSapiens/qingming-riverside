@@ -46,7 +46,7 @@
       if(!p)return false;
       this.attention.set(p.id,time+4);return p;
     }
-    draw(ctx,time,range,streetY,walkerAt,fallback,drawFurniture,life=null,afterPerson=null){
+    draw(ctx,time,range,streetY,walkerAt,fallback,drawFurniture,life=null,afterPerson=null,presence=null){
       this.visible=0;this.hits=[];this.storyHands.clear();
       const residents=[],walkers=[];
       for(const p of population.residents){
@@ -66,22 +66,28 @@
         const y=story?.y??(ground?streetY(x):p.y);
         const person=story?{...p,activity:story.activity??p.activity,story:story.story,storyProp:story.prop,originX:p.x}:p;
         const item={p:person,x,y,pose,walking:story?.walking??false,direction:story?.direction??conversation?.direction??p.direction,ground};
-        (story?.front?walkers:residents).push(item);this.hits.push({p,x,y});
+        const alpha=presence?.(p,'resident')??1;
+        if(alpha>.01)(story?.front?walkers:residents).push({...item,alpha});
+        if(alpha>.18)this.hits.push({p,x,y});
       }
       for(const p of population.walkers){
         const pose=walkerAt(p,time);
         if(pose.x<range[0]-65||pose.x>range[1]+65)continue;
-        walkers.push({p,x:pose.x,y:streetY(pose.x),pose,walking:pose.moving,direction:pose.direction,ground:streetY});
+        const alpha=presence?.(p,'walker')??1;
+        if(alpha>.01)walkers.push({p,x:pose.x,y:streetY(pose.x),pose,walking:pose.moving,direction:pose.direction,ground:streetY,alpha});
       }
       const drawGroup=items=>{
         items.sort((a,b)=>a.y-b.y);
         for(const item of items){
-          this.visible++;
+          if(item.alpha>.18)this.visible++;
+          const fading=item.alpha<.999;
+          if(fading){ctx.save();ctx.globalAlpha*=item.alpha;}
           if(this.ready&&window.PEOPLE_FRAMES){const result=this.sprite(ctx,item,time);if(result){this.storyHands.set(item.p.originX??item.p.x,result.hand);afterPerson?.(item,result);}}
           else{
             fallback(item.x,item.y,item.p.h/33,item.pose.phase,item.direction,window.ScrollWardrobe?.palettes[item.p.outfit]?.upper||'#8b917c',item.walking);
             afterPerson?.(item,{hand:{x:item.x+item.direction*item.p.h*.1,y:item.y-item.p.h*.48}});
           }
+          if(fading)ctx.restore();
         }
       };
       // Dining and shop activity is behind the furniture. The public walking
