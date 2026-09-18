@@ -2,6 +2,27 @@
 
 可交互的宋代沿河街市画卷，包含行走、乘船、街市故事和「虹桥过船」。
 
+## 画卷片段
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/showcase/night-riverside.webp" alt="夜景下的沿河街市与虹桥" /></td>
+    <td width="50%"><img src="docs/showcase/night-city-gate.webp" alt="夜景下灯火亮起的城门货市" /></td>
+  </tr>
+  <tr>
+    <td align="center">夜景 · 沿河灯火</td>
+    <td align="center">夜景 · 城门货市</td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/showcase/watermill-day.webp" alt="白天的水磨与作坊" /></td>
+    <td width="50%"><img src="docs/showcase/rain-market.webp" alt="清明时雨中的沿河茶市与虹桥" /></td>
+  </tr>
+  <tr>
+    <td align="center">水磨作坊</td>
+    <td align="center">清明时雨</td>
+  </tr>
+</table>
+
 **公开源码：[qingming-riverside](https://github.com/xianxie6/qingming-riverside)**
 
 **在线体验：[打开画卷](https://xianxie6.github.io/qingming-riverside/)**
