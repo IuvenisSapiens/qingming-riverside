@@ -38,9 +38,8 @@
       button.addEventListener('pointerleave',()=>{hovered=null;preview();});
       button.addEventListener('focus',()=>{focused=p.id;preview();});
       button.addEventListener('blur',()=>{focused=null;preview();});
-      if(button!==marker)button.addEventListener('click',()=>enter(p,button));
+      button.addEventListener('click',()=>launchScene(p,button===hotspot?marker:button));
     }
-    marker.addEventListener('click',()=>{selected=p;launchScene(p,marker);});
   }
   let preloadStarted=false;
   frame.addEventListener('pointerenter',e=>{if(e.pointerType!=='touch'){paintingHovered=true;preview();if(!preloadStarted){preloadStarted=true;window.loadQingmingScene().catch(()=>{preloadStarted=false;});}}});
