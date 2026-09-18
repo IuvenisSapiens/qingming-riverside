@@ -16,7 +16,7 @@
   const svg=document.createElementNS(NS,'svg');svg.id='atlasDraft';svg.setAttribute('viewBox',`0 0 ${W} ${H}`);svg.setAttribute('aria-hidden','true');frame.append(svg);
   const defs=document.createElementNS(NS,'defs');svg.append(defs);
   // Full-size registered artwork only. Missing artwork never falls back to a filter.
-  const layers=new Map();let draftReady=false,selected=null,hovered=null,focused=null,revision=0,lastTrigger=null;
+  const layers=new Map();let draftReady=false,selected=null,hovered=null,focused=null,paintingHovered=false,revision=0,lastTrigger=null;
   const card=document.createElement('article');card.id='atlasCard';card.hidden=true;card.innerHTML='<span class="atlas-kicker">汴河拾景</span><h2></h2><p></p>';atlas.append(card);
   const live=document.createElement('button');live.id='atlasLive';live.hidden=true;live.setAttribute('aria-label','走入动态街市');live.innerHTML='<span>走入动态街市</span><i aria-hidden="true">↗</i>';frame.append(live);
   const back=document.createElement('button');back.id='atlasOverview';back.textContent='← 退回长卷';back.hidden=true;atlas.append(back);
@@ -40,10 +40,13 @@
       button.addEventListener('click',()=>enter(p,button));
     }
   }
+  frame.addEventListener('pointerenter',e=>{if(e.pointerType!=='touch'){paintingHovered=true;preview();}});
+  frame.addEventListener('pointerleave',()=>{paintingHovered=false;preview();});
   function preview(){
     const id=null;
-    for(const p of places){layers.get(p.id).layer.classList.toggle('revealed',draftReady&&id===p.id);for(const b of document.querySelectorAll(`[data-place="${p.id}"]`))b.classList.toggle('preview',id===p.id);}
-    message.textContent=selected?'可直接切换景点 · Esc 退回长卷':id&&!draftReady?'建筑底稿素材待补齐 · 点击可入画游览':(draftReady?'移笔游目，点景入画':'移笔游目，点景入画 · 建筑底稿待补齐');
+    const showingChoices=paintingHovered||Boolean(focused);
+    for(const p of places){layers.get(p.id).layer.classList.toggle('revealed',false);for(const b of document.querySelectorAll(`[data-place="${p.id}"]`))b.classList.toggle('preview',showingChoices||id===p.id);}
+    message.textContent=selected?'可直接切换景点 · Esc 退回长卷':showingChoices?'选择景点进入动态街市':'移笔游目，点景入画';
   }
   function layout(){
     const r=stage.getBoundingClientRect();if(!r.width||!r.height)return;
@@ -62,7 +65,7 @@
     card.querySelector('h2').textContent=p.name;card.querySelector('p').textContent=p.description;card.hidden=false;live.hidden=false;
     message.textContent=`已到达${p.name} · Esc 退回长卷`;
   }
-  function overview(){++revision;selected=null;hovered=null;focused=null;card.hidden=true;live.hidden=true;back.hidden=true;atlas.classList.remove('inspecting');for(const b of nav.children)b.removeAttribute('aria-current');layout();preview();lastTrigger?.focus({preventScroll:true});}
+  function overview(){++revision;selected=null;hovered=null;focused=null;paintingHovered=false;card.hidden=true;live.hidden=true;back.hidden=true;atlas.classList.remove('inspecting');for(const b of nav.children)b.removeAttribute('aria-current');layout();preview();lastTrigger?.focus({preventScroll:true});}
   back.addEventListener('click',overview);
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!atlas.hidden){e.preventDefault();overview();}});
   function isolate(on){for(const el of document.body.children)if(el!==atlas&&el.tagName!=='SCRIPT')el.inert=on;document.querySelector('#atlasReturn').hidden=on;}
