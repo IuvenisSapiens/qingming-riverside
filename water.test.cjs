@@ -32,8 +32,8 @@ test('falling water uses staggered strands and a moving boat makes the stronger 
 test('Three.js water is vendored locally and the scene enters through an ES module',()=>{
   assert.ok(fs.statSync(`${__dirname}/vendor/three.module.js`).size>600000);
   assert.ok(fs.statSync(`${__dirname}/vendor/three.core.js`).size>1400000);
-  const html=fs.readFileSync(`${__dirname}/index.html`,'utf8');
-  assert.match(html,/type="module" src="scene\.js\?v=[\d.]+"/);
+  const loader=fs.readFileSync(`${__dirname}/dynamic-loader.js`,'utf8');
+  assert.match(loader,/add\('scene\.js\?v=[\d.]+',true\)/);
   assert.match(fs.readFileSync(`${__dirname}/scene.js`,'utf8'),/new ThreeWaterRenderer\(\)/);
 });
 

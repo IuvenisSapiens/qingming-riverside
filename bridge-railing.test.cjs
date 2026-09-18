@@ -35,5 +35,5 @@ test('foreground restoration follows all pedestrians and zoom increases their re
  assert.doesNotMatch(scene,/eraseFrontRailing/);
  assert.ok(scene.indexOf('window.BridgeRailing.draw')>scene.indexOf('ctx.drawImage(actors'));
  assert.match(scene,/density=Math.min\(\(devicePixelRatio\|\|1\)\*state.scale,4\)/);
- assert.match(fs.readFileSync(__dirname+'/index.html','utf8'),/src="bridge-railing.js/);
+ assert.match(fs.readFileSync(__dirname+'/dynamic-loader.js','utf8'),/'bridge-railing\.js\?v=/);
 });

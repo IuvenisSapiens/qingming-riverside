@@ -64,7 +64,18 @@
   back.addEventListener('click',overview);
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!atlas.hidden){e.preventDefault();overview();}});
   function isolate(on){for(const el of document.body.children)if(el!==atlas&&el.tagName!=='SCRIPT')el.inert=on;document.querySelector('#atlasReturn').hidden=on;}
-  document.querySelector('#atlasLive').addEventListener('click',()=>{if(!selected||!document.body.classList.contains('ready'))return;window.dispatchEvent(new CustomEvent('atlas-enter',{detail:{x:selected.world}}));atlas.hidden=true;document.body.classList.remove('in-atlas');isolate(false);document.querySelector('#painting').focus();});
+  document.querySelector('#atlasLive').addEventListener('click',async event=>{
+    if(!selected)return;
+    const button=event.currentTarget,original=button.textContent;
+    button.disabled=true;button.textContent='正在载入街市…';message.textContent='正在展开动态街市，请稍候';
+    try{
+      await window.loadQingmingScene();
+      window.dispatchEvent(new CustomEvent('atlas-enter',{detail:{x:selected.world}}));
+      atlas.hidden=true;document.body.classList.remove('in-atlas');isolate(false);document.querySelector('#painting').focus();
+    }catch(error){
+      console.error(error);message.textContent='动态街市加载失败，请检查网络后重试';
+    }finally{button.disabled=false;button.textContent=original;}
+  });
   document.querySelector('#atlasReturn').addEventListener('click',()=>{atlas.hidden=false;document.body.classList.add('in-atlas');isolate(true);overview();});
   const load=()=>{if(img.naturalWidth!==W||img.naturalHeight!==H){message.textContent='原图尺寸已改变，请重新校准景点坐标';return;}layout();preview();};
   img.addEventListener('load',load);img.addEventListener('error',()=>{message.textContent='画卷加载失败，请刷新重试';});if(img.complete&&img.naturalWidth)load();

@@ -14,7 +14,7 @@
   </aside>
   <section id="atlas" aria-label="全景入画" aria-describedby="atlasHint">
     <header class="atlas-heading"><span>汴河 · 一日千年</span><h1>清明上河</h1><p id="atlasHint">移笔游目，点景入画</p></header>
-    <div id="atlasFrame"><img id="atlasImage" src="assets/qingming-panorama-v1.png" alt="从水磨作坊、沿河茶市，经虹桥到城门货市的全景长卷" draggable="false"><div id="atlasPlaces">
+    <div id="atlasFrame"><img id="atlasImage" src="assets/qingming-panorama-v1.webp" alt="从水磨作坊、沿河茶市，经虹桥到城门货市的全景长卷" draggable="false" fetchpriority="high"><div id="atlasPlaces">
       <button data-u="0.1" style="--u:10%" aria-label="进入水磨作坊">水磨作坊</button><button data-u="0.33" style="--u:33%" aria-label="进入沿河茶市">沿河茶市</button><button data-u="0.52" style="--u:52%" aria-label="进入虹桥">虹桥烟火</button><button data-u="0.92" style="--u:92%" aria-label="进入城门货市">城门货市</button>
     </div></div>
     <p id="atlasMessage" role="status">正在展开画卷…</p>
@@ -54,26 +54,8 @@
   </div>
   <nav class="district-stops" aria-label="街区位置"><button class="district-stop" data-x="-1550" aria-label="浏览水磨作坊" title="水磨作坊"></button><button class="district-stop" data-x="650" aria-label="浏览茶市" title="茶市"></button><button class="district-stop" data-x="1560" aria-label="浏览虹桥" title="虹桥"></button><button class="district-stop" data-x="3360" aria-label="浏览城门货市" title="城门货市"></button></nav>
   <input id="position" aria-label="画卷位置" type="range" min="0" max="1000" value="0">
-  <script src="visits.js?v=1" defer></script>
-  <script src="world.js?v=8.2"></script>
-  <script src="bridge-railing.js?v=1"></script>
-  <script src="night.js?v=1.3"></script>
-  <script src="weather.js?v=10.5"></script>
-  <script src="sound.js?v=10.5"></script>
-  <script src="water.js?v=1.3"></script>
-  <script src="movement.js?v=7.3"></script>
-  <script src="population.js?v=6.3"></script>
-  <script src="street-life.js?v=9.1"></script>
-  <script src="street-details.js?v=8.1"></script>
-  <script src="bridge-event.js?v=9.2"></script>
-  <script src="bridge-art.js?v=9.2"></script>
-  <script src="people-frames.js"></script>
-  <script src="people-masks.js"></script>
-  <script src="wardrobe.js?v=5.2.1"></script>
-  <script src="inhabitants.js?v=10.6"></script>
-  <script src="featured-characters.js?v=7.3"></script>
-  <script src="districts.js?v=5.4"></script>
+  <script src="visits.js?v=2" defer></script>
+  <script src="dynamic-loader.js?v=1"></script>
   <script src="atlas.js?v=2"></script>
-  <script type="module" src="scene.js?v=14"></script>
 </body>
 </html>
