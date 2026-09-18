@@ -31,8 +31,9 @@
     const layer=element('g',{mask:`url(#draft-${p.id})`,class:'draft-region'},svg);
     const art=element('image',{x:0,y:0,width:W,height:H,preserveAspectRatio:'none'},layer);layers.set(p.id,{layer,art});
     const hotspot=document.createElement('button');hotspot.className='atlas-hotspot';hotspot.dataset.place=p.id;hotspot.setAttribute('aria-label',`${p.name}，点击入画`);hotspot.style.cssText=`left:${x/W*100}%;top:${y/H*100}%;width:${w/W*100}%;height:${h/H*100}%`;frame.append(hotspot);
+    const marker=document.createElement('button');marker.className='atlas-scene-marker';marker.dataset.place=p.id;marker.setAttribute('aria-label',`${p.name}，点击进入动态街市`);marker.innerHTML=`<span>${p.name}</span><i aria-hidden="true">↗</i>`;marker.style.cssText=`left:${(x+w*.5)/W*100}%;top:${(y+h*.48)/H*100}%`;frame.append(marker);
     const label=document.createElement('button');label.className='atlas-label';label.dataset.place=p.id;label.innerHTML=`<small>0${i+1}</small><span>${p.name}</span><em>点击入画</em>`;nav.append(label);
-    for(const button of [hotspot,label]){
+    for(const button of [hotspot,marker,label]){
       button.addEventListener('pointerenter',e=>{if(e.pointerType!=='touch'){hovered=p.id;preview();}});
       button.addEventListener('pointerleave',()=>{hovered=null;preview();});
       button.addEventListener('focus',()=>{focused=p.id;preview();});
@@ -45,7 +46,7 @@
   function preview(){
     const id=null;
     const showingChoices=paintingHovered||Boolean(focused);
-    for(const p of places){layers.get(p.id).layer.classList.toggle('revealed',false);for(const b of document.querySelectorAll(`[data-place="${p.id}"]`))b.classList.toggle('preview',showingChoices||id===p.id);}
+    for(const p of places){layers.get(p.id).layer.classList.toggle('revealed',false);for(const b of document.querySelectorAll(`[data-place="${p.id}"]`))b.classList.toggle('preview',showingChoices||id===p.id);for(const b of document.querySelectorAll(`.atlas-scene-marker[data-place="${p.id}"]`)){b.classList.toggle('visible',showingChoices);b.tabIndex=showingChoices?0:-1;}}
     message.textContent=selected?'可直接切换景点 · Esc 退回长卷':showingChoices?'选择景点进入动态街市':'移笔游目，点景入画';
   }
   function layout(){

@@ -119,6 +119,10 @@ body.night .district-stop::after{background:#d2b078;border-color:#ecd29a}
 .draft-region{opacity:0;transition:opacity 420ms ease-in-out}.draft-region.revealed{opacity:1;transition-duration:580ms}
 #atlasFrame .atlas-hotspot{position:absolute;display:block;min-width:0;min-height:0;padding:0;border:0;border-radius:18px;background:transparent;box-shadow:none;cursor:pointer;color:#67573e}
 #atlasFrame .atlas-hotspot:focus-visible{outline:2px dashed #67573e;outline-offset:8px}
+#atlasFrame .atlas-scene-marker{position:absolute;z-index:7;display:inline-flex;align-items:center;gap:7px;min-width:max-content;padding:7px 9px;border:1px solid rgba(255,255,255,.78);border-radius:2px;background:rgba(48,39,28,.46);color:#fff;font:400 13px/1.1 'Kaiti SC','STKaiti','KaiTi',cursive;letter-spacing:.08em;text-shadow:0 1px 4px rgba(20,15,10,.95);opacity:0;pointer-events:none;transform:translate(-50%,-50%) scale(.94);transition:opacity .28s ease,transform .28s ease,background .2s ease}
+#atlasFrame .atlas-scene-marker.visible{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1)}
+#atlasFrame .atlas-scene-marker i{display:grid;place-items:center;width:18px;height:18px;border:1px solid rgba(255,255,255,.9);border-radius:50%;font:400 11px/1 sans-serif;font-style:normal;letter-spacing:0;text-shadow:none}
+#atlasFrame .atlas-scene-marker:hover,#atlasFrame .atlas-scene-marker:focus-visible{background:rgba(48,39,28,.7);outline:2px solid rgba(255,255,255,.75);outline-offset:3px}
 #atlasPlaces{position:relative;inset:auto;display:flex;justify-content:center;gap:clamp(12px,4vw,70px);z-index:2}
 #atlasPlaces .atlas-label{position:relative;left:auto;top:auto;transform:none;opacity:1;display:grid;grid-template-columns:auto auto;gap:4px 9px;padding:10px 12px;background:transparent;color:#695c47;border-radius:0;box-shadow:none;font:15px 'Songti SC',serif;letter-spacing:.12em;min-height:60px}
 #atlasPlaces small{font-size:10px;align-self:center;opacity:.6}#atlasPlaces em{grid-column:2;font-size:10px;font-style:normal;opacity:0;transition:opacity .4s}
