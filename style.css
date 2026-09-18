@@ -101,6 +101,7 @@ body{transition:color 8s,background 8s}
 body.night{--ink:#e8d5ae;--line:rgba(225,198,151,.25);--paper:#273447}
 body.night .controls,body.night .corner-controls{background:#172638b8;border-color:#dfbe7c30}
 body.night #nightToggle{color:#ffda91;background:#e7b35920}
+body.night #weatherStart[data-active="true"]{color:#d8f1ee;background:rgba(68,123,133,.48);border-color:rgba(181,224,218,.55);text-shadow:0 1px 4px rgba(8,22,31,.8)}
 body.night button:hover{background:#e8c48320}
 body.night .district-stop::after{background:#d2b078;border-color:#ecd29a}
 @media(max-width:600px){#nightToggle{width:58px;padding:5px} .controls{gap:0;padding-inline:3px}.controls>button{flex-shrink:0}.controls>button:is(#left,#play,#right){width:34px;padding:6px}#bridgeStart,#weatherStart{width:54px}#hailFerry{width:44px}}
