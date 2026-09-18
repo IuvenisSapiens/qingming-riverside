@@ -102,6 +102,9 @@ body.night{--ink:#e8d5ae;--line:rgba(225,198,151,.25);--paper:#273447}
 body.night .controls,body.night .corner-controls{background:#172638b8;border-color:#dfbe7c30}
 body.night #nightToggle{color:#ffda91;background:#e7b35920}
 body.night #weatherStart[data-active="true"]{color:#d8f1ee;background:rgba(68,123,133,.48);border-color:rgba(181,224,218,.55);text-shadow:0 1px 4px rgba(8,22,31,.8)}
+body.night .rope-control{background:rgba(24,42,57,.88);border-color:rgba(218,235,224,.54);color:#f3e5bf;box-shadow:0 3px 12px rgba(4,15,24,.45);text-shadow:0 1px 4px rgba(4,15,24,.9)}
+body.night .rope-control:hover{background:rgba(38,63,79,.96)}
+body.night #towGrip.pulling{background:rgba(99,81,48,.9);border-color:#f2d28c;color:#fff0c9}
 body.night button:hover{background:#e8c48320}
 body.night .district-stop::after{background:#d2b078;border-color:#ecd29a}
 @media(max-width:600px){#nightToggle{width:58px;padding:5px} .controls{gap:0;padding-inline:3px}.controls>button{flex-shrink:0}.controls>button:is(#left,#play,#right){width:34px;padding:6px}#bridgeStart,#weatherStart{width:54px}#hailFerry{width:44px}}
