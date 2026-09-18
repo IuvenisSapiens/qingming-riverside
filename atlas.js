@@ -17,7 +17,8 @@
   const defs=document.createElementNS(NS,'defs');svg.append(defs);
   // Full-size registered artwork only. Missing artwork never falls back to a filter.
   const layers=new Map();let draftReady=false,selected=null,hovered=null,focused=null,revision=0,lastTrigger=null;
-  const card=document.createElement('article');card.id='atlasCard';card.hidden=true;card.innerHTML='<span class="atlas-kicker">汴河拾景</span><h2></h2><p></p><button id="atlasLive">走入动态街市 ↗</button>';atlas.append(card);
+  const card=document.createElement('article');card.id='atlasCard';card.hidden=true;card.innerHTML='<span class="atlas-kicker">汴河拾景</span><h2></h2><p></p>';atlas.append(card);
+  const live=document.createElement('button');live.id='atlasLive';live.hidden=true;live.setAttribute('aria-label','走入动态街市');live.innerHTML='<span>走入动态街市</span><i aria-hidden="true">↗</i>';frame.append(live);
   const back=document.createElement('button');back.id='atlasOverview';back.textContent='← 退回长卷';back.hidden=true;atlas.append(back);
   function element(tag,attrs,parent){const el=document.createElementNS(NS,tag);for(const [k,v] of Object.entries(attrs))el.setAttribute(k,v);parent.append(el);return el;}
   for(const [i,p] of places.entries()){
@@ -40,7 +41,7 @@
     }
   }
   function preview(){
-    const id=selected?null:(hovered||focused);
+    const id=null;
     for(const p of places){layers.get(p.id).layer.classList.toggle('revealed',draftReady&&id===p.id);for(const b of document.querySelectorAll(`[data-place="${p.id}"]`))b.classList.toggle('preview',id===p.id);}
     message.textContent=selected?'可直接切换景点 · Esc 退回长卷':id&&!draftReady?'建筑底稿素材待补齐 · 点击可入画游览':(draftReady?'移笔游目，点景入画':'移笔游目，点景入画 · 建筑底稿待补齐');
   }
@@ -52,29 +53,30 @@
     atlas.dataset.place=selected?.id||'overview';
   }
   async function enter(p,button){
-    const token=++revision;lastTrigger=button;selected=p;hovered=null;focused=null;preview();card.hidden=true;back.hidden=false;
+    const token=++revision;lastTrigger=button;selected=p;hovered=null;focused=null;preview();card.hidden=true;live.hidden=true;back.hidden=false;
+    const [x,y,w,h]=p.box;live.style.left=`${x+w*.1}px`;live.style.top=`${y+h*.62}px`;
     for(const b of nav.children)b.setAttribute('aria-current',String(b.dataset.place===p.id));
     // Give the color layer time to return before camera movement.
     await new Promise(r=>setTimeout(r,reduced.matches?0:420));if(token!==revision)return;
     atlas.classList.add('inspecting');layout();await new Promise(r=>setTimeout(r,reduced.matches?0:1050));if(token!==revision)return;
-    card.querySelector('h2').textContent=p.name;card.querySelector('p').textContent=p.description;card.hidden=false;
+    card.querySelector('h2').textContent=p.name;card.querySelector('p').textContent=p.description;card.hidden=false;live.hidden=false;
     message.textContent=`已到达${p.name} · Esc 退回长卷`;
   }
-  function overview(){++revision;selected=null;hovered=null;focused=null;card.hidden=true;back.hidden=true;atlas.classList.remove('inspecting');for(const b of nav.children)b.removeAttribute('aria-current');layout();preview();lastTrigger?.focus({preventScroll:true});}
+  function overview(){++revision;selected=null;hovered=null;focused=null;card.hidden=true;live.hidden=true;back.hidden=true;atlas.classList.remove('inspecting');for(const b of nav.children)b.removeAttribute('aria-current');layout();preview();lastTrigger?.focus({preventScroll:true});}
   back.addEventListener('click',overview);
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!atlas.hidden){e.preventDefault();overview();}});
   function isolate(on){for(const el of document.body.children)if(el!==atlas&&el.tagName!=='SCRIPT')el.inert=on;document.querySelector('#atlasReturn').hidden=on;}
-  document.querySelector('#atlasLive').addEventListener('click',async event=>{
+  live.addEventListener('click',async event=>{
     if(!selected)return;
-    const button=event.currentTarget,original=button.textContent;
-    button.disabled=true;button.textContent='正在载入街市…';message.textContent='正在展开动态街市，请稍候';
+    const button=event.currentTarget,original=button.innerHTML;
+    button.disabled=true;button.querySelector('span').textContent='正在载入街市…';button.querySelector('i').hidden=true;message.textContent='正在展开动态街市，请稍候';
     try{
       await window.loadQingmingScene();
       window.dispatchEvent(new CustomEvent('atlas-enter',{detail:{x:selected.world}}));
       atlas.hidden=true;document.body.classList.remove('in-atlas');isolate(false);document.querySelector('#painting').focus();
     }catch(error){
       console.error(error);message.textContent='动态街市加载失败，请检查网络后重试';
-    }finally{button.disabled=false;button.textContent=original;}
+    }finally{button.disabled=false;button.innerHTML=original;}
   });
   document.querySelector('#atlasReturn').addEventListener('click',()=>{atlas.hidden=false;document.body.classList.add('in-atlas');isolate(true);overview();});
   const load=()=>{if(img.naturalWidth!==W||img.naturalHeight!==H){message.textContent='原图尺寸已改变，请重新校准景点坐标';return;}layout();preview();};
