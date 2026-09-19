@@ -3,6 +3,22 @@ const assert=require('node:assert/strict');
 const {gaitAt,footContacts,deform,activityAt,speeds}=require('./movement.js');
 const {residents,walkers}=require('./population.js');
 
+test('painted leg centerlines never cross into an X during a complete stride',()=>{
+  const {visibleFeet}=require('./movement.js');
+  for(const natural of [-1,1])for(const height of [44,63,74])for(let step=0;step<128;step++){
+    const contacts=[{x:40,y:400},{x:160,y:400}];
+    const feet=visibleFeet(gaitAt(step/128*height*.64,height).map(f=>({...f,x:f.x*natural,y:-f.lift})));
+    const rig={w:height*.5,h:height,f:{w:200,h:400},contacts,feet,
+      pose:{phase:step/128*height*.64*.15},hand:[.7,.4],walking:true};
+    for(let v=.64;v<=1;v+=.01){
+      const left=deform(.2,v,{...rig,leg:0});
+      const right=deform(.8,v,{...rig,leg:1});
+      assert.ok(left[0]<=right[0]+1e-8,'left silhouette must not be pulled across the right silhouette');
+    }
+    assert.ok(feet.some(f=>f.stance));
+  }
+});
+
 test('the planted foot stays in the same world position as the body moves',()=>{
   for(const h of [44,60,74])for(const direction of [-1,1]){
     const step=h*.32,start=step*.08;

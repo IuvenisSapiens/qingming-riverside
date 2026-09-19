@@ -74,7 +74,7 @@
   async function launchScene(place,button){
     if(!place)return;
     const original=button.innerHTML;
-    button.disabled=true;button.querySelector('span').textContent='正在进入…';button.querySelector('i').hidden=true;message.textContent='正在展开动态街市，请稍候';
+    button.disabled=true;button.querySelector('span').textContent='正在进入…';const icon=button.querySelector('i');if(icon)icon.hidden=true;message.textContent='正在展开动态街市，请稍候';
     try{
       await window.loadQingmingScene();
       window.dispatchEvent(new CustomEvent('atlas-enter',{detail:{x:place.world}}));

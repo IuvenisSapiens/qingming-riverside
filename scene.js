@@ -861,7 +861,7 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.6';
   }
   function frame(now){
     const elapsed=last?(now-last)/1000:0,dt=Math.min(elapsed,.05);last=now;
-    if(!document.hidden){
+    if(!document.hidden&&!document.body.classList.contains('in-atlas')){
       if(elapsed>0){
         frameSample.elapsed+=elapsed;frameSample.count++;if(elapsed>.025)frameSample.slow++;
         if(frameSample.elapsed>=1){
@@ -1031,10 +1031,18 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.6';
   reduced.addEventListener('change',e=>{state.running=!e.matches;if(e.matches)stopAuto();updateMotion();});
   addEventListener('resize',resize);
   window.addEventListener('atlas-enter',e=>{
-    if(!state.loaded)return;
-    zoomAt(1);browse();
-    state.camera=state.target=clamp(e.detail.x-state.width*.5/state.scale,MIN,state.max);
-    painting.dataset.entryX=String(e.detail.x);
+    if(!state.loaded||!Number.isFinite(e.detail?.x))return;
+    // Selecting a district moves the visitor as well as the camera. End any
+    // old voyage before cancelling the journey, which otherwise ignores input
+    // while aboard and restores the passenger position on the next frame.
+    if(aboard())Object.assign(ferry,world.createFerry());
+    cancelJourney();
+    Object.assign(player,{x:clamp(e.detail.x,MIN+70,MAX-65),pose:null,
+      phase:0,facing:1,actionTime:0,idleTime:0});
+    zoomAt(1);setFollow(true);
+    state.camera=state.target=cameraForPlayer();
+    painting.dataset.entryX=String(player.x);
+    updateHailUI();announce('画师已来到所选街市，可左右行走');
   });
   const loadError=()=>{document.querySelector('#loading').hidden=true;document.querySelector('#loading').style.display='none';document.querySelector('#error').hidden=false;window.dispatchEvent(new Event('atlas-error'));};
   artwork.onload=async()=>{
@@ -1042,6 +1050,6 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.6';
     catch{loadError();}
   };
   artwork.onerror=loadError;
-  artwork.src='assets/street-empty.png';
+  artwork.src='assets/street-empty.webp';
   resize();setFollow(true);updatePlay();updateMotion();requestAnimationFrame(frame);
 })();

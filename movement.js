@@ -77,6 +77,12 @@
     }
     return pose;
   }
+  function visibleFeet(feet){
+    // The artwork is a side view, with a rear and a front silhouette, not
+    // anatomical left/right legs. Exchange silhouette ownership when the
+    // feet pass instead of dragging the painted left leg through the right.
+    return [...feet].sort((a,b)=>a.x-b.x);
+  }
   function footContacts(data,width,height){
     return [0,1].map(side=>{
       const left=side?Math.floor(width/2):0,right=side?width:Math.floor(width/2);
@@ -94,19 +100,34 @@
     let x=(u-.5)*w,y=(v-bottom/f.h)*h;
     const upper=1-smooth((v-.62)/.15);
     x+=(pose.sway||0)*upper+(pose.lean||0)*(.7-v)*h*upper;
-    if(walking)y-=Math.cos((pose.phase||0)*2)*.22*upper*(pose.gaitWeight??1);
+    // Match the body's rise to the distance-driven feet, at every height.
+    if(walking){
+      const cycle=(pose.phase||0)/.15/(h*.64)*Math.PI*2;
+      y-=Math.sin(cycle*2)**2*h*.006*upper*(pose.gaitWeight??1);
+    }
     const head=1-smooth((v-.18)/.13),nod=pose.nod||0;
     x-=nod*(v-.29)*h*head;y+=nod*(u-.55)*w*head;
     const du=(u-hand[0])/.4,dv=(v-hand[1])/.26;
     const arm=Math.exp(-(du*du+dv*dv)*2)*upper*smooth((v-.19)/.12);
     x+=(pose.handX||0)*arm;y+=(pose.handY||0)*arm;
-    const weight=smooth((v-.71)/.22),mix=smooth((u-.43)/.14);
+    const weight=rig.leg===undefined?smooth((v-.71)/.22):clamp((v-.64)/.30),mix=smooth((u-.43)/.14);
+    if(rig.cloth){
+      // A long robe hangs over the legs; it must not become two crossed
+      // trouser legs. Let the hem breathe with the stride without folding it.
+      const spread=Math.abs(feet[1].x-feet[0].x);
+      const rest=Math.abs(contacts[1].x-contacts[0].x)/f.w*w;
+      x+=(u-.5)*(spread-rest)*.35*weight;
+      y-=Math.max(...feet.map(foot=>foot.lift||0))*.15*weight;
+      return [x,y];
+    }
     for(let leg=0;leg<2;leg++){
-      const influence=(leg?mix:1-mix)*weight;
+      // Each leg is a separate mesh below the hip. Blending opposite foot
+      // translations across one connected mesh inverts it as the feet pass.
+      const influence=(rig.leg===undefined?(leg?mix:1-mix):Number(rig.leg===leg))*weight;
       x+=(feet[leg].x-(contacts[leg].x/f.w-.5)*w)*influence;
       y+=(feet[leg].y-(contacts[leg].y-bottom)/f.h*h)*influence;
     }
     return [x,y];
   }
-  return {speeds,hands,createWalkInput,stepWalk,gaitAt,activityAt,footContacts,deform};
+  return {speeds,hands,createWalkInput,stepWalk,gaitAt,visibleFeet,activityAt,footContacts,deform};
 });

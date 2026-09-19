@@ -25,8 +25,29 @@ test('stationary gestures reuse a bounded bitmap while walking feet rebuild ever
   for(let t=2;t<10;t+=.1)crowd.sprite(ctx,item,t);
   assert.equal(crowd.residentFrames.size,1);assert.equal(ctx.draws.at(-1)[0],firstImage);
   const before=triangles;item.p={...p,id:'walker-1'};item.walking=true;
-  crowd.sprite(ctx,item,10);crowd.sprite(ctx,item,10.001);
-  assert.equal(triangles-before,144,'walking feet are never cached between frames');
+  crowd.sprite(ctx,item,10);const firstWalk=triangles-before;
+  crowd.sprite(ctx,item,10.001);
+  assert.ok(firstWalk>0);
+  assert.equal(triangles-before,firstWalk*2,'walking feet are never cached between frames');
+});
+
+test('walking leg meshes never turn inside out when the feet pass each other',()=>{
+  const crowd=load(),ctx=context();
+  crowd.motionContext=context();crowd.motionSurface={};
+  let checked=0;
+  const verify=(_ctx,_texture,vertices)=>{
+    const [a,b,c]=vertices.map(v=>v.target);
+    const area=(b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0]);
+    assert.ok(area>0,'a leg must retain its orientation throughout the stride');checked++;
+  };
+  crowd.triangle=verify;crowd.quad=(ctx,texture,p,q,r)=>verify(ctx,texture,[p,q,r]);
+  for(const natural of [-1,1])for(const direction of [-1,1])for(let step=0;step<64;step++){
+    const art={frame:{w:200,h:400},texture:{width:200,height:400},direction:natural,
+      contacts:[{x:40,y:395},{x:160,y:400}],grips:[[.7,.4]]};
+    crowd.sprite(ctx,{p:{art,h:63},x:0,y:0,direction,walking:true,
+      pose:{phase:step/64*63*.64*.15}},0);
+  }
+  assert.ok(checked>1000);
 });
 
 test('mesh cells sample only their local source rectangle, with all three vertices inside it',()=>{

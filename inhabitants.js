@@ -4,7 +4,7 @@
   const movement=window.ScrollMovement;
   class Inhabitants {
     constructor(){
-      this.art=new Image();this.ready=false;this.attention=new Map();this.visible=0;this.phaseSample=0;this.outfits=new Map();this.residentFrames=new Map();this.hits=[];this.storyHands=new Map();
+      this.art=new Image();this.ready=false;this.attention=new Map();this.visible=0;this.phaseSample=0;this.outfits=new Map();this.walkLayers=new WeakMap();this.residentFrames=new Map();this.hits=[];this.storyHands=new Map();
       this.art.onload=()=>{this.prepare();this.ready=true;};this.art.src='assets/people-ink.png';
     }
     prepare(){
@@ -40,6 +40,20 @@
       c.clip();c.globalCompositeOperation='source-over';c.globalAlpha=1;c.drawImage(base,f.x,f.y);c.restore();
       c.restore();c.globalCompositeOperation='destination-in';c.drawImage(base,0,0);
       this.outfits.set(key,texture);return texture;
+    }
+    robeLayers(texture,sprite,f){
+      if(this.walkLayers.has(texture))return this.walkLayers.get(texture);
+      const mask=document.createElement('canvas');mask.width=f.w;mask.height=f.h;
+      const c=mask.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,f.w,f.h*.71);
+      c.beginPath();
+      window.ScrollWardrobe.garments[sprite].lower.forEach(([x,y],i)=>i?c.lineTo(x-f.x,y-f.y):c.moveTo(x-f.x,y-f.y));
+      c.closePath();c.fill();c.strokeStyle='#fff';c.lineWidth=2;c.stroke();
+      const layers=['destination-in','destination-out'].map(operation=>{
+        const canvas=document.createElement('canvas');canvas.width=f.w;canvas.height=f.h;
+        const ctx=canvas.getContext('2d');ctx.drawImage(texture,0,0);
+        ctx.globalCompositeOperation=operation;ctx.drawImage(mask,0,0);return canvas;
+      });
+      this.walkLayers.set(texture,layers);return layers;
     }
     react(x,y,time,streetY){
       const p=this.hits.find(hit=>Math.abs(hit.x-x)<20&&y<hit.y+5&&y>hit.y-hit.p.h)?.p;
@@ -103,7 +117,8 @@
       const seated=[6,7,8].includes(p.sprite),flip=direction*natural,contacts=art?.contacts??this.contacts[p.sprite];
       // The controlled figure keeps the last foot placement on release.
       // Only the lifted sole settles; the legs do not snap to the source pose.
-      const feet=(walking||pose.gaitWeight!==undefined?movement.gaitAt((pose.phase||0)/.15,h,pose.gaitWeight??1):contacts.map(c=>({x:(c.x/f.w-.5)*w,lift:0,stance:true})))
+      const animatedGait=!seated&&(walking||pose.gaitWeight!==undefined);
+      const feet=(animatedGait?movement.visibleFeet(movement.gaitAt((pose.phase||0)/.15,h,pose.gaitWeight??1).map(foot=>({...foot,x:foot.x*natural}))):contacts.map(c=>({x:(c.x/f.w-.5)*w,lift:0,stance:true})))
         .map(foot=>({...foot,y:(ground?ground(x+foot.x*flip)-y:0)-foot.lift}));
       const hand=art?.grips[0]??movement.hands[p.sprite].map((n,i)=>(n-(i?f.y:f.x))/(i?f.h:f.w));
       const rig={w,h,f,contacts,feet,pose,hand,walking};
@@ -121,17 +136,28 @@
         const surface=cached?.context??this.motionContext;
         surface.setTransform(1,0,0,1,0,0);surface.clearRect(0,0,pw,ph);
         surface.setTransform(density,0,0,density,(w/2+12)*density,(h+8)*density);
-        const columns=[0,.25,.5,.75,1],rows=[0,.12,.24,.38,.51,.64,.74,.84,.94,1];
-        const points=rows.map(v=>columns.map(u=>({source:[u*f.w,v*f.h],target:movement.deform(u,v,rig)})));
+        const split=(contacts[0].x+contacts[1].x)/(2*f.w);
+        const longRobe=!art&&[0,1,2,4,5,9].includes(p.sprite);
+        const layers=longRobe&&animatedGait?this.robeLayers(texture,p.sprite,f):null;
+        const panels=animatedGait?[
+          {columns:[0,split/2,split],rows:[.64,.74,.84,.94,1],leg:0},
+          {columns:[split,(split+1)/2,1],rows:[.64,.74,.84,.94,1],leg:1},
+          {columns:[0,.25,.5,.75,1],rows:longRobe?[0,.12,.24,.38,.51,.64,.71,.80,.88,.94,1]:[0,.12,.24,.38,.51,.64],cloth:longRobe}
+        ]:[{columns:[0,.25,.5,.75,1],rows:[0,.12,.24,.38,.51,.64,.74,.84,.94,1]}];
+        for(const {columns,rows,leg,cloth} of panels){
+        const panelRig={...rig,leg,cloth};
+        const panelTexture=layers?layers[cloth?0:1]:texture;
+        const points=rows.map(v=>columns.map(u=>({source:[u*f.w,v*f.h],target:movement.deform(u,v,panelRig)})));
         for(let row=0;row<rows.length-1;row++)for(let col=0;col<columns.length-1;col++){
           const p=points[row][col],q=points[row][col+1],r=points[row+1][col],s=points[row+1][col+1];
           // A quad is safe only when its fourth corner is exactly affine.
           // The old .12 tolerance left disconnected edges when zoomed in.
           if(Math.hypot(q.target[0]+r.target[0]-p.target[0]-s.target[0],q.target[1]+r.target[1]-p.target[1]-s.target[1])<1e-8){
-            this.quad(surface,texture,p,q,r);
+            this.quad(surface,panelTexture,p,q,r);
           }else{
-            this.triangle(surface,texture,[p,q,r]);this.triangle(surface,texture,[q,s,r]);
+            this.triangle(surface,panelTexture,[p,q,r]);this.triangle(surface,panelTexture,[q,s,r]);
           }
+        }
         }
         if(cached){cached.tick=tick;cached.hand=movement.deform(...hand,rig);}
       }
