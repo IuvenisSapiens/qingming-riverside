@@ -28,7 +28,7 @@
     }
     furniture(ctx,original,min,max){
       // These masks belong between shop occupants and the street traffic.
-      const strips=[[531,300,338,28],[1816,432,165,28],
+      const strips=[[531,300,338,40],[1816,432,165,34],
         [119,439,115,8],[279,441,98,9],[585,440,107,9],[753,442,68,8]];
       ctx.save();ctx.globalAlpha=1;
       for(const [x,y,w,h] of strips)if(x+w>min&&x<max)ctx.drawImage(original,x,y,w,h,x,y,w,h);

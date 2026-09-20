@@ -60,3 +60,18 @@ test('mesh cells sample only their local source rectangle, with all three vertic
   for(const {source:[u,v]} of vertices)assert.ok(u>=x&&u<=x+w&&v>=y&&v<=y+h);
   assert.deepEqual([dx,dy,dw,dh],[x,y,w,h],'cropping preserves source coordinates for the affine transform');
 });
+
+
+test('paper extraction removes exterior white but preserves enclosed ivory and dark hair',()=>{
+  const crowd=load(),width=7,height=7,data=new Uint8ClampedArray(width*height*4).fill(255);
+  const pixel=(x,y,color)=>data.set([...color,255],(y*width+x)*4);
+  for(let y=1;y<=5;y++)for(let x=1;x<=5;x++)pixel(x,y,[50,45,35]);
+  pixel(3,3,[248,247,244]); // ivory enclosed by the ink contour
+  pixel(1,3,[210,208,205]); // exterior antialiased fringe
+  crowd.removePaper({data,width,height});
+  assert.equal(data[3],0);
+  assert.equal(data[(3*width+3)*4+3],255);
+  assert.equal(data[(2*width+2)*4+3],255);
+  assert.ok(data[(3*width+1)*4+3]>0&&data[(3*width+1)*4+3]<255);
+  assert.ok(data[(3*width+1)*4]<210,'white contamination is removed from the soft edge');
+});

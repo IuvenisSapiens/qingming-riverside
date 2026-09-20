@@ -8,13 +8,17 @@
       this.art.onload=()=>{this.prepare();this.ready=true;};this.art.src='assets/people-ink.png';
     }
     prepare(){
-      this.frames=window.PEOPLE_FRAMES.map((f,index)=>{
+      this.frames=window.PEOPLE_FRAMES.map(f=>{
         const canvas=document.createElement('canvas');canvas.width=f.w;canvas.height=f.h;
-        const c=canvas.getContext('2d');c.translate(-f.x,-f.y);c.beginPath();
-        for(const ring of window.PEOPLE_MASKS[index]){ring.forEach(([x,y],i)=>i?c.lineTo(x,y):c.moveTo(x,y));c.closePath();}
-        c.clip('evenodd');c.drawImage(this.art,0,0);
-        c.globalCompositeOperation='multiply';c.fillStyle='#e0d3b5';c.fillRect(f.x,f.y,f.w,f.h);
-        c.globalCompositeOperation='destination-out';c.lineWidth=7;c.lineJoin='round';c.stroke();return canvas;
+        const c=canvas.getContext('2d',{willReadFrequently:true});
+        c.drawImage(this.art,f.x,f.y,f.w,f.h,0,0,f.w,f.h);
+        // Extract the actual ink contour. Coarse polygons left white wedges
+        // around hair and bowls and shaved off ribbons and fingertips.
+        const pixels=c.getImageData(0,0,f.w,f.h);
+        this.removePaper(pixels);
+        c.putImageData(pixels,0,0);
+        c.globalCompositeOperation='source-atop';c.fillStyle='rgba(125,101,55,.13)';c.fillRect(0,0,f.w,f.h);
+        return canvas;
       });
       this.contacts=this.frames.map(c=>movement.footContacts(c.getContext('2d').getImageData(0,0,c.width,c.height).data,c.width,c.height));
       this.motionSurface=document.createElement('canvas');this.motionSurface.width=512;this.motionSurface.height=384;
@@ -22,6 +26,42 @@
       // keeping their raster in CPU memory avoids GPU readback stalls.
       this.motionContext=this.motionSurface.getContext('2d',{willReadFrequently:true});
       for(const p of [...population.residents,...population.walkers])this.textureFor(p);
+    }
+    removePaper({data,width,height}){
+      const count=width*height,background=new Uint8Array(count),queue=new Int32Array(count);
+      let head=0,tail=0;
+      const paper=i=>{const k=i*4,r=data[k],g=data[k+1],b=data[k+2];return data[k+3]<24||(Math.min(r,g,b)>220&&Math.max(r,g,b)-Math.min(r,g,b)<25);};
+      const visit=i=>{if(!background[i]&&paper(i)){background[i]=1;queue[tail++]=i;}};
+      for(let x=0;x<width;x++){visit(x);visit((height-1)*width+x);}
+      for(let y=0;y<height;y++){visit(y*width);visit(y*width+width-1);}
+      while(head<tail){const i=queue[head++],x=i%width;
+        if(x)visit(i-1);if(x<width-1)visit(i+1);if(i>=width)visit(i-width);if(i<count-width)visit(i+width);
+      }
+      // Remove white matte contamination only on the exterior contour;
+      // light garments and porcelain inside the figure remain opaque.
+      for(let i=0;i<count;i++){
+        const k=i*4;if(background[i]){data[k+3]=0;continue;}
+        const x=i%width,edge=(x&&background[i-1])||(x<width-1&&background[i+1])||(i>=width&&background[i-width])||(i<count-width&&background[i+width]);
+        if(!edge)continue;
+        const low=Math.min(data[k],data[k+1],data[k+2]),high=Math.max(data[k],data[k+1],data[k+2]);
+        if(low<145||high-low>45)continue;
+        const alpha=Math.max(.12,Math.min(1,(255-low)/110));
+        for(let c=0;c<3;c++)data[k+c]=Math.max(0,255+(data[k+c]-255)/alpha);
+        data[k+3]=Math.round(data[k+3]*alpha);
+      }
+    }
+    seat(ctx,p,x,y){
+      if(![6,7,8].includes(p.sprite)||p.layer!=='street')return;
+      const ground=477,half=p.h*.19,top=y-2;
+      ctx.save();ctx.lineJoin='round';ctx.strokeStyle='#655a40';ctx.lineWidth=.85;
+      ctx.fillStyle='#8d7b57';
+      for(const side of [-1,1]){
+        const sx=x+side*half*.76;
+        ctx.beginPath();ctx.moveTo(sx-1,top);ctx.lineTo(sx+1,top);ctx.lineTo(sx+side*1.5+1,ground);ctx.lineTo(sx+side*1.5-1,ground);ctx.closePath();ctx.fill();ctx.stroke();
+      }
+      ctx.beginPath();ctx.moveTo(x-half*.8,ground-5);ctx.lineTo(x+half*.8,ground-5);ctx.stroke();
+      ctx.fillStyle='#a08b62';ctx.beginPath();ctx.moveTo(x-half,top-1);ctx.lineTo(x+half,top-1);ctx.lineTo(x+half+1,top+2);ctx.lineTo(x-half-1,top+2);ctx.closePath();ctx.fill();ctx.stroke();
+      ctx.restore();
     }
     textureFor(p){
       const key=`${p.sprite}:${p.outfit}`;
@@ -112,6 +152,7 @@
       this.phaseSample=Math.sin(time*.81+population.residents[0].phase);
     }
     sprite(ctx,{p,x,y,pose,walking,direction,ground},time){
+      if(!walking&&!p.story)this.seat(ctx,p,x,y);
       const art=p.art,f=art?.frame??window.PEOPLE_FRAMES[p.sprite],texture=art?.texture??this.textureFor(p),h=p.h,w=h*f.w/f.h*([6,7,8].includes(p.sprite)?.80:1);
       const natural=art?.direction??[1,1,1,1,1,-1,1,-1,1,-1,1,1][p.sprite];
       const seated=[6,7,8].includes(p.sprite),flip=direction*natural,contacts=art?.contacts??this.contacts[p.sprite];

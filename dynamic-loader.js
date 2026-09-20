@@ -2,10 +2,10 @@
   'use strict';
   const scripts=[
     'world.js?v=8.2','bridge-railing.js?v=1','night.js?v=1.3','weather.js?v=10.5',
-    'sound.js?v=10.5','water.js?v=1.3','movement.js?v=7.5','population.js?v=6.3',
+    'sound.js?v=10.5','water.js?v=1.3','movement.js?v=7.5','population.js?v=6.4',
     'street-life.js?v=9.1','street-details.js?v=8.1','bridge-event.js?v=9.2',
     'bridge-art.js?v=9.2','people-frames.js','people-masks.js','wardrobe.js?v=5.2.1',
-    'inhabitants.js?v=10.8','featured-characters.js?v=7.3','districts.js?v=5.5'
+    'inhabitants.js?v=10.9','featured-characters.js?v=7.4','districts.js?v=5.6'
   ];
   let loading=null;
   let warmed=false;

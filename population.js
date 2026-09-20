@@ -29,7 +29,7 @@
     const baseline=[6,7,8].includes(sprite)?y-(h-normalizedHeight):y;
     residents.push({id:`resident-${id}`,x,y:baseline,h:normalizedHeight,sprite,role,direction,layer,outfit:(id*5+Math.floor(id/4))%8,phase:id*2.399963,period:4.8+(id%9)*.51});
   }
-  [548,588,628,660,695,759,797].forEach((x,i)=>add(x,315,48,[6,7,8,6,7,8,6][i],i%2?'talk':'drink',1,'balcony'));
+  [548,588,628,660,695,759,797].forEach((x,i)=>add(x,323,48,[6,7,8,6,7,8,6][i],i%2?'talk':'drink',1,'balcony'));
   // Food stalls, table groups, neighbours, children and the east pavilion.
   [[80,474,65,9],[109,477,64,5],[211,476,65,8],[271,477,70,5],
    [313,473,61,6],[347,475,62,7],[386,477,62,8],

@@ -29,20 +29,8 @@
       const matte=document.createElement('canvas');matte.width=w;matte.height=h;
       const ctx=matte.getContext('2d',{willReadFrequently:true});ctx.drawImage(image,0,0);
       const pixels=ctx.getImageData(0,0,w,h),data=pixels.data;
-      // Remove only background connected to the atlas border. The ivory
-      // collars, paper scrolls and skin inside the ink outlines stay intact.
-      const marked=new Uint8Array(w*h),queue=new Int32Array(w*h);let read=0,write=0;
-      const visit=i=>{
-        if(marked[i])return;marked[i]=1;
-        const p=i*4,r=data[p],g=data[p+1],b=data[p+2];
-        if(data[p+3]<24||(Math.min(r,g,b)>212&&Math.max(r,g,b)-Math.min(r,g,b)<22))queue[write++]=i;
-      };
-      for(let x=0;x<w;x++){visit(x);visit((h-1)*w+x);}
-      for(let y=0;y<h;y++){visit(y*w);visit(y*w+w-1);}
-      while(read<write){
-        const i=queue[read++],x=i%w,y=Math.floor(i/w);data[i*4+3]=0;
-        if(x>0)visit(i-1);if(x<w-1)visit(i+1);if(y>0)visit(i-w);if(y<h-1)visit(i+w);
-      }
+      // Use the same exterior matte and edge decontamination as the crowd.
+      window.Inhabitants.prototype.removePaper(pixels);
       ctx.putImageData(pixels,0,0);
       for(const [name,definition] of Object.entries(definitions)){
         let left=w,top=h,right=0,bottom=0;
