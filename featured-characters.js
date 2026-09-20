@@ -21,7 +21,11 @@
   class Characters{
     constructor(){
       this.ready=false;this.sprites={};this.image=new Image();
-      this.image.onload=()=>{this.prepare();this.ready=true;};
+      this.assetsReady=new Promise((resolve,reject)=>{
+        this.image.onload=()=>{try{this.prepare();this.ready=true;resolve();}catch(error){reject(error);}};
+        this.image.onerror=()=>reject(new Error('画师素材加载失败'));
+      });
+      this.assetsReady.catch(()=>{});
       this.image.src='assets/featured-characters-v7.webp';
     }
     prepare(){

@@ -73,12 +73,15 @@
   function isolate(on){for(const el of document.body.children)if(el!==atlas&&el.tagName!=='SCRIPT')el.inert=on;document.querySelector('#atlasReturn').hidden=on;}
   async function launchScene(place,button){
     if(!place)return;
-    const original=button.innerHTML;
+    const token=++revision,original=button.innerHTML;
     button.disabled=true;button.querySelector('span').textContent='正在进入…';const icon=button.querySelector('i');if(icon)icon.hidden=true;message.textContent='正在展开动态街市，请稍候';
     try{
       await window.loadQingmingScene();
+      await window.prepareQingmingEntry(place.world);
+      if(token!==revision)return;
       window.dispatchEvent(new CustomEvent('atlas-enter',{detail:{x:place.world}}));
       atlas.hidden=true;document.body.classList.remove('in-atlas');isolate(false);document.querySelector('#painting').focus();
+      window.warmQingmingDistricts();
     }catch(error){
       console.error(error);message.textContent='动态街市加载失败，请检查网络后重试';
     }finally{button.disabled=false;button.innerHTML=original;}

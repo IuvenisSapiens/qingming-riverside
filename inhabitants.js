@@ -5,10 +5,22 @@
   class Inhabitants {
     constructor(){
       this.art=new Image();this.ready=false;this.attention=new Map();this.visible=0;this.phaseSample=0;this.outfits=new Map();this.walkLayers=new WeakMap();this.residentFrames=new Map();this.hits=[];this.storyHands=new Map();
-      this.art.onload=()=>{this.prepare();this.ready=true;};this.art.src='assets/people-ink.webp';
+      this.assetsReady=new Promise((resolve,reject)=>{
+        this.art.onload=async()=>{try{await this.prepare();this.ready=true;resolve();}catch(error){reject(error);}};
+        this.art.onerror=()=>reject(new Error('人物素材加载失败'));
+      });
+      // The scene observes this promise once its own artwork finishes loading.
+      this.assetsReady.catch(()=>{});
+      this.art.src='assets/people-ink.webp';
     }
-    prepare(){
-      this.frames=window.PEOPLE_FRAMES.map(f=>{
+    async prepare(){
+      let sliceStart=performance.now();
+      const yieldToBrowser=async()=>{
+        if(performance.now()-sliceStart<8)return;
+        await new Promise(resolve=>setTimeout(resolve,0));sliceStart=performance.now();
+      };
+      this.frames=[];
+      for(const f of window.PEOPLE_FRAMES){
         const canvas=document.createElement('canvas');canvas.width=f.w;canvas.height=f.h;
         const c=canvas.getContext('2d',{willReadFrequently:true});
         c.drawImage(this.art,f.x,f.y,f.w,f.h,0,0,f.w,f.h);
@@ -18,14 +30,17 @@
         this.removePaper(pixels);
         c.putImageData(pixels,0,0);
         c.globalCompositeOperation='source-atop';c.fillStyle='rgba(125,101,55,.13)';c.fillRect(0,0,f.w,f.h);
-        return canvas;
-      });
+        this.frames.push(canvas);
+        await yieldToBrowser();
+      }
       this.contacts=this.frames.map(c=>movement.footContacts(c.getContext('2d').getImageData(0,0,c.width,c.height).data,c.width,c.height));
       this.motionSurface=document.createElement('canvas');this.motionSurface.width=512;this.motionSurface.height=384;
       // These small surfaces are copied into another canvas repeatedly;
       // keeping their raster in CPU memory avoids GPU readback stalls.
       this.motionContext=this.motionSurface.getContext('2d',{willReadFrequently:true});
-      for(const p of [...population.residents,...population.walkers])this.textureFor(p);
+      for(const p of [...population.residents,...population.walkers]){
+        this.textureFor(p);await yieldToBrowser();
+      }
     }
     removePaper({data,width,height}){
       const count=width*height,background=new Uint8Array(count),queue=new Int32Array(count);

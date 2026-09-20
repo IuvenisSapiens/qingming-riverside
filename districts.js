@@ -3,15 +3,33 @@
   class Districts {
     constructor(){
       this.west=new Image();this.east=new Image();this.center=null;this.ready=false;
-      const load=(image,src)=>new Promise((resolve,reject)=>{
-        image.onload=()=>resolve(image);image.onerror=()=>reject(new Error(`Failed to load ${src}`));image.src=src;
-      });
-      this.assetsReady=Promise.all([
-        load(this.west,'assets/district-west-fast.webp'),
-        load(this.east,'assets/district-east-fast.webp')
-      ]);
+      this.pending=new Map();this.loaded=new Set();this.revision=0;
     }
-    load(){return this.assetsReady;}
+    needed(min,max){return [min<100?'west':null,max>2072?'east':null].filter(Boolean);}
+    hasRange(min,max){return this.needed(min,max).every(side=>this.loaded.has(side));}
+    loadSide(side,priority='high'){
+      if(this.loaded.has(side))return Promise.resolve(this[side]);
+      if(this.pending.has(side)){
+        if(priority==='high')this[side].fetchPriority='high';
+        return this.pending.get(side);
+      }
+      const image=this[side],src=`assets/district-${side}-fast.webp`;
+      image.fetchPriority=priority;image.decoding='async';
+      const pending=new Promise((resolve,reject)=>{
+        const timer=setTimeout(()=>reject(new Error(`Timed out loading ${src}`)),20000);
+        image.onload=async()=>{
+          try{
+            if(image.decode)await image.decode();
+            clearTimeout(timer);this.loaded.add(side);this.revision++;resolve(image);
+          }catch(error){clearTimeout(timer);reject(error);}
+        };
+        image.onerror=()=>{clearTimeout(timer);reject(new Error(`Failed to load ${src}`));};
+        image.src=src;
+      }).finally(()=>this.pending.delete(side));
+      this.pending.set(side,pending);return pending;
+    }
+    loadRange(min,max){return Promise.all(this.needed(min,max).map(side=>this.loadSide(side)));}
+    load(){return Promise.all(['west','east'].map(side=>this.loadSide(side,'low')));}
     prepare(center){
       this.center=document.createElement('canvas');this.center.width=2172;this.center.height=724;
       const c=this.center.getContext('2d');c.drawImage(center,0,0,2172,724);

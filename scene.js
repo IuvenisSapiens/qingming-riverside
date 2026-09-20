@@ -1,4 +1,4 @@
-import {ThreeWaterRenderer} from './water-three.js?v=1.6';
+import {ThreeWaterRenderer} from './water-three.js?v=1.7';
 
 (() => {
   'use strict';
@@ -25,11 +25,16 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.6';
   const motion = document.querySelector('#motion');
   const artwork = new Image();
   const boatArtwork=new Image(),boatSprite=document.createElement('canvas');boatSprite.width=0;
+  const boatReady=new Promise((resolve,reject)=>{
   boatArtwork.onload=()=>{
     boatSprite.width=featured.boat.width*3;boatSprite.height=featured.boat.height*3;
     const context=boatSprite.getContext('2d');context.imageSmoothingQuality='high';
     context.drawImage(boatArtwork,40,150,2100,425,0,0,boatSprite.width,boatSprite.height);
+    resolve();
   };
+  boatArtwork.onerror=()=>reject(new Error('船只素材加载失败'));
+  });
+  boatReady.catch(()=>{});
   boatArtwork.src='assets/boat.webp';
   const world=window.ScrollWorld;
   const ferry=world.createFerry();
@@ -725,8 +730,19 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.6';
   }
   function render(){
     const {width,height,scale,camera,time:t}=state;
-    ctx.fillStyle='#e2d4b6';ctx.fillRect(0,0,width,height);
     if(!state.loaded)return;
+    // Keep the last complete frame while a fast jump reaches an unloaded district.
+    // Never draw actors over missing architecture.
+    if(!districts.hasRange(camera,camera+width/scale)){
+      if(!state.loadingRange){
+        state.loadingRange=true;document.querySelector('#loading').style.display='grid';
+        districts.loadRange(camera,camera+width/scale).catch(loadError).finally(()=>{
+          state.loadingRange=false;document.querySelector('#loading').style.display='none';
+        });
+      }
+      return;
+    }
+    ctx.fillStyle='#e2d4b6';ctx.fillRect(0,0,width,height);
     ctx.save();ctx.translate(-camera*scale,-state.viewY*scale);ctx.scale(scale,scale);ctx.imageSmoothingQuality='high';
     districts.draw(ctx,artwork,camera,camera+width/scale);
     const visibleRange=[camera,camera+width/scale];
@@ -736,7 +752,7 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.6';
     ctx.imageSmoothingQuality='low';
 
     if(threeWater.active){
-      const layer=threeWater.render({time:t,camera,viewY:state.viewY,width,height,scale,source:canvas});
+      const layer=threeWater.render({time:t,camera,viewY:state.viewY,width,height,scale,source:canvas,backdropKey:[camera,state.viewY,width,height,scale,canvas.width,canvas.height,districts.revision,weatherSample.wet].join(':')});
       ctx.save();ctx.globalAlpha=.92;ctx.drawImage(layer,camera,state.viewY,width/scale,height/scale);ctx.restore();
     }else drawRiverSurface(t,camera-50,camera+width/scale+50);
     // Light the architecture first. All people, furniture masks, boats and
@@ -861,7 +877,7 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.6';
   }
   function frame(now){
     const elapsed=last?(now-last)/1000:0,dt=Math.min(elapsed,.05);last=now;
-    if(!document.hidden&&!document.body.classList.contains('in-atlas')){
+    if(!document.hidden&&!document.body.classList.contains('in-atlas')&&!state.loadingRange){
       if(elapsed>0){
         frameSample.elapsed+=elapsed;frameSample.count++;if(elapsed>.025)frameSample.slow++;
         if(frameSample.elapsed>=1){
@@ -1044,9 +1060,23 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.6';
     painting.dataset.entryX=String(player.x);
     updateHailUI();announce('画师已来到所选街市，可左右行走');
   });
+  window.prepareQingmingEntry=async x=>{
+    // Match atlas-enter's 1x zoom and the camera's 44% follow position.
+    const viewWidth=state.width/state.baseScale;
+    const camera=clamp(clamp(x,MIN+70,MAX-65)-viewWidth*.44,MIN,Math.max(MIN,MAX-viewWidth));
+    await districts.loadRange(camera,camera+viewWidth);
+  };
+  let backgroundStarted=false;
+  window.warmQingmingDistricts=()=>{
+    if(backgroundStarted)return; backgroundStarted=true;
+    // Let the selected scene paint before requesting the remaining artwork.
+    requestAnimationFrame(()=>setTimeout(()=>districts.load().catch(error=>{
+      backgroundStarted=false;console.warn('Background district loading deferred:',error);
+    }),500));
+  };
   const loadError=()=>{document.querySelector('#loading').hidden=true;document.querySelector('#loading').style.display='none';document.querySelector('#error').hidden=false;window.dispatchEvent(new Event('atlas-error'));};
   artwork.onload=async()=>{
-    try{await districts.load();districts.prepare(artwork);state.loaded=true;document.body.classList.add('ready');window.dispatchEvent(new Event('atlas-ready'));}
+    try{await Promise.all([inhabitants.assetsReady,characters.assetsReady,boatReady]);districts.prepare(artwork);state.loaded=true;document.body.classList.add('ready');window.dispatchEvent(new Event('atlas-ready'));}
     catch{loadError();}
   };
   artwork.onerror=loadError;

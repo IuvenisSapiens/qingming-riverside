@@ -75,7 +75,7 @@ export class ThreeWaterRenderer{
    this.material=new THREE.ShaderMaterial({vertexShader,fragmentShader,uniforms:this.uniforms,transparent:true,depthTest:false,depthWrite:false});
    this.scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2,2),this.material));
    this.renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();this.active=false;});
-   this.renderer.domElement.addEventListener('webglcontextrestored',()=>{this.active=true;});
+   this.renderer.domElement.addEventListener('webglcontextrestored',()=>{this.backdropKey=undefined;this.active=true;});
    this.active=true;
   }catch(error){console.warn('Water uses Canvas fallback',error);}
  }
@@ -84,15 +84,22 @@ export class ThreeWaterRenderer{
   this.width=width;this.height=height;this.dpr=dpr;
   this.renderer.setPixelRatio(Math.min(dpr,1.35));this.renderer.setSize(width,height,false);
  }
- render({time,camera,viewY,width,height,scale,source,pass=0}){
+ render({time,camera,viewY,width,height,scale,source,backdropKey,pass=0}){
   if(!this.active)return null;
   if(source){
-   if(!this.backdrop){
+   const resized=this.backdropWidth!==source.width||this.backdropHeight!==source.height;
+   if(!this.backdrop||resized){
+    this.backdrop?.dispose();this.backdropKey=undefined;
+    this.backdropWidth=source.width;this.backdropHeight=source.height;
     this.backdrop=new THREE.CanvasTexture(source);
     this.backdrop.minFilter=THREE.LinearFilter;this.backdrop.generateMipmaps=false;
     this.uniforms.uBackdrop.value=this.backdrop;
    }
-   this.backdrop.needsUpdate=true;
+   // The backdrop contains architecture and wet ground, not animated actors.
+   // Upload again only when the view or wetness changes.
+   if(backdropKey===undefined||backdropKey!==this.backdropKey){
+    this.backdrop.needsUpdate=true;this.backdropKey=backdropKey;
+   }
   }
   // Simulation time already freezes on pause. Never reset it to zero.
   this.uniforms.uTime.value=time;this.uniforms.uPass.value=pass;
