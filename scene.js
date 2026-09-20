@@ -30,7 +30,7 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.6';
     const context=boatSprite.getContext('2d');context.imageSmoothingQuality='high';
     context.drawImage(boatArtwork,40,150,2100,425,0,0,boatSprite.width,boatSprite.height);
   };
-  boatArtwork.src='assets/boat.png';
+  boatArtwork.src='assets/boat.webp';
   const world=window.ScrollWorld;
   const ferry=world.createFerry();
   let life;
@@ -1050,6 +1050,6 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.6';
     catch{loadError();}
   };
   artwork.onerror=loadError;
-  artwork.src='assets/street-empty.webp';
+  artwork.src='assets/street-empty-fast.webp';
   resize();setFollow(true);updatePlay();updateMotion();requestAnimationFrame(frame);
 })();

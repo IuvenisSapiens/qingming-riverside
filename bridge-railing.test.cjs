@@ -13,10 +13,12 @@ const inside=([x,y],poly)=>{
 const masked=(x,y)=>railing.silhouettes.some(p=>inside([x,y],p));
 test('bridge timber covers foreground but preserves openings and upper bodies',()=>{
  assert.ok(masked(1520,382),'handrail');
+ assert.ok(masked(1520,389),'middle beam follows the painted upper edge');
+ assert.equal(masked(1520,394),false,'no background stripe below the middle beam');
  assert.ok(masked(1544,398),'previously missing center post');
  assert.ok(masked(1520,412),'front deck conceals feet below the deck');
  assert.equal(masked(1520,386.5),false,'upper opening stays transparent');
- assert.equal(masked(1522,399),false,'lower opening stays transparent');
+ assert.equal(masked(1520,399),false,'lower opening stays transparent');
  for(let x=1360;x<1710;x+=3)assert.equal(masked(x,350),false,'no stray cuts above the railing');
 });
 test('railing restores original painting at full opacity and restores caller state',()=>{

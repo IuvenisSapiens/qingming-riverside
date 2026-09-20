@@ -5,7 +5,7 @@
   class Inhabitants {
     constructor(){
       this.art=new Image();this.ready=false;this.attention=new Map();this.visible=0;this.phaseSample=0;this.outfits=new Map();this.walkLayers=new WeakMap();this.residentFrames=new Map();this.hits=[];this.storyHands=new Map();
-      this.art.onload=()=>{this.prepare();this.ready=true;};this.art.src='assets/people-ink.png';
+      this.art.onload=()=>{this.prepare();this.ready=true;};this.art.src='assets/people-ink.webp';
     }
     prepare(){
       this.frames=window.PEOPLE_FRAMES.map(f=>{
@@ -87,11 +87,15 @@
       const c=mask.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,f.w,f.h*.71);
       c.beginPath();
       window.ScrollWardrobe.garments[sprite].lower.forEach(([x,y],i)=>i?c.lineTo(x-f.x,y-f.y):c.moveTo(x-f.x,y-f.y));
-      c.closePath();c.fill();c.strokeStyle='#fff';c.lineWidth=2;c.stroke();
+      c.closePath();c.fill();c.strokeStyle='#fff';c.lineWidth=5;c.stroke();
       const layers=['destination-in','destination-out'].map(operation=>{
         const canvas=document.createElement('canvas');canvas.width=f.w;canvas.height=f.h;
         const ctx=canvas.getContext('2d');ctx.drawImage(texture,0,0);
-        ctx.globalCompositeOperation=operation;ctx.drawImage(mask,0,0);return canvas;
+        ctx.globalCompositeOperation=operation;
+        ctx.drawImage(mask,0,0);
+        // Discard residual garment-edge ink; it must not travel with a foot.
+        if(operation==='destination-out')ctx.clearRect(0,0,f.w,f.h*([.895,.895,.95,.75,.93,.91,0,0,0,.94,.75,.80][sprite]??.90));
+        return canvas;
       });
       this.walkLayers.set(texture,layers);return layers;
     }
@@ -159,10 +163,20 @@
       // The controlled figure keeps the last foot placement on release.
       // Only the lifted sole settles; the legs do not snap to the source pose.
       const animatedGait=!seated&&(walking||pose.gaitWeight!==undefined);
-      const feet=(animatedGait?movement.visibleFeet(movement.gaitAt((pose.phase||0)/.15,h,pose.gaitWeight??1).map(foot=>({...foot,x:foot.x*natural}))):contacts.map(c=>({x:(c.x/f.w-.5)*w,lift:0,stance:true})))
+      const feet=(animatedGait?movement.gaitAt((pose.phase||0)/.15,h,pose.gaitWeight??1).map(foot=>({...foot,x:foot.x*natural})):contacts.map(c=>({x:(c.x/f.w-.5)*w,lift:0,stance:true})))
         .map(foot=>({...foot,y:(ground?ground(x+foot.x*flip)-y:0)-foot.lift}));
       const hand=art?.grips[0]??movement.hands[p.sprite].map((n,i)=>(n-(i?f.y:f.x))/(i?f.h:f.w));
-      const rig={w,h,f,contacts,feet,pose,hand,walking};
+      // Keep anatomical ownership through the passing pose. The source
+      // back leg starts behind the body, regardless of facing direction.
+      if(animatedGait&&natural===1)feet.reverse();
+      if(animatedGait&&!art&&[0,1,2,10].includes(p.sprite)){
+        const cycle=(pose.phase||0)/.15/(h*.64)*Math.PI*2;
+        const weight=pose.gaitWeight??1;
+        pose={...pose,handX:(pose.handX||0)+Math.sin(cycle)*1.25*weight,
+          handY:(pose.handY||0)+Math.cos(cycle)*.35*weight,
+          lean:(pose.lean||0)+natural*.012*weight};
+      }
+      const rig={w,h,f,contacts,feet,pose,hand,walking,natural,skeletal:animatedGait};
       const density=3,pw=Math.ceil((w+24)*density),ph=Math.ceil((h+16)*density);
       // Small seated/working gestures need fewer mesh rebuilds than camera
       // movement. Stagger them by character; moving feet still update every
@@ -178,27 +192,32 @@
         surface.setTransform(1,0,0,1,0,0);surface.clearRect(0,0,pw,ph);
         surface.setTransform(density,0,0,density,(w/2+12)*density,(h+8)*density);
         const split=(contacts[0].x+contacts[1].x)/(2*f.w);
-        const longRobe=!art&&[0,1,2,4,5,9].includes(p.sprite);
+        const longRobe=!art&&[0,1,2,4,5,9,10,11].includes(p.sprite);
         const layers=longRobe&&animatedGait?this.robeLayers(texture,p.sprite,f):null;
         const panels=animatedGait?[
-          {columns:[0,split/2,split],rows:[.64,.74,.84,.94,1],leg:0},
-          {columns:[split,(split+1)/2,1],rows:[.64,.74,.84,.94,1],leg:1},
-          {columns:[0,.25,.5,.75,1],rows:longRobe?[0,.12,.24,.38,.51,.64,.71,.80,.88,.94,1]:[0,.12,.24,.38,.51,.64],cloth:longRobe}
+          {columns:[0,split/2,split],rows:[.60,.68,.76,.84,.91,.965,1],leg:0},
+          {columns:[split,(split+1)/2,1],rows:[.60,.68,.76,.84,.91,.965,1],leg:1},
+          {columns:[0,.25,.5,.75,1],rows:longRobe?[0,.12,.24,.38,.51,.60,.71,.80,.88,.94,1]:[0,.12,.24,.38,.51,.60,.64],cloth:longRobe}
         ]:[{columns:[0,.25,.5,.75,1],rows:[0,.12,.24,.38,.51,.64,.74,.84,.94,1]}];
         for(const {columns,rows,leg,cloth} of panels){
         const panelRig={...rig,leg,cloth};
+        if(animatedGait&&leg!==undefined)panelRig.skeleton=movement.legSkeleton(panelRig);
+        // Garment and leg masks retain their painted contours. Each leg
+        // includes its ankle and shoe in the same skeletal mesh.
         const panelTexture=layers?layers[cloth?0:1]:texture;
+        surface.save();
         const points=rows.map(v=>columns.map(u=>({source:[u*f.w,v*f.h],target:movement.deform(u,v,panelRig)})));
         for(let row=0;row<rows.length-1;row++)for(let col=0;col<columns.length-1;col++){
           const p=points[row][col],q=points[row][col+1],r=points[row+1][col],s=points[row+1][col+1];
           // A quad is safe only when its fourth corner is exactly affine.
           // The old .12 tolerance left disconnected edges when zoomed in.
-          if(Math.hypot(q.target[0]+r.target[0]-p.target[0]-s.target[0],q.target[1]+r.target[1]-p.target[1]-s.target[1])<1e-8){
+          if(!animatedGait&&Math.hypot(q.target[0]+r.target[0]-p.target[0]-s.target[0],q.target[1]+r.target[1]-p.target[1]-s.target[1])<1e-8){
             this.quad(surface,panelTexture,p,q,r);
           }else{
             this.triangle(surface,panelTexture,[p,q,r]);this.triangle(surface,panelTexture,[q,s,r]);
           }
         }
+        surface.restore();
         }
         if(cached){cached.tick=tick;cached.hand=movement.deform(...hand,rig);}
       }

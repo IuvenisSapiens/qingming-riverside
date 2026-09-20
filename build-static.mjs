@@ -4,7 +4,8 @@ import {extname,join} from 'node:path';
 const root=new URL('.',import.meta.url);
 const output=new URL('./dist/',root);
 const publicExtensions=new Set(['.html','.css','.js','.mp3']);
-const excluded=new Set(['worker.js','build-static.mjs']);
+// Local Sunyang prototype is not part of the public release.
+const excluded=new Set(['worker.js','build-static.mjs','sunyang.html','sunyang.css','sunyang.js']);
 
 await rm(output,{recursive:true,force:true});
 await mkdir(output,{recursive:true});

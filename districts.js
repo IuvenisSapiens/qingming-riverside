@@ -7,8 +7,8 @@
         image.onload=()=>resolve(image);image.onerror=()=>reject(new Error(`Failed to load ${src}`));image.src=src;
       });
       this.assetsReady=Promise.all([
-        load(this.west,'assets/district-west.webp'),
-        load(this.east,'assets/district-east.webp')
+        load(this.west,'assets/district-west-fast.webp'),
+        load(this.east,'assets/district-east-fast.webp')
       ]);
     }
     load(){return this.assetsReady;}

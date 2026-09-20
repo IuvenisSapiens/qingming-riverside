@@ -75,3 +75,26 @@ test('paper extraction removes exterior white but preserves enclosed ivory and d
   assert.ok(data[(3*width+1)*4+3]>0&&data[(3*width+1)*4+3]<255);
   assert.ok(data[(3*width+1)*4]<210,'white contamination is removed from the soft edge');
 });
+
+
+test('each ankle and shoe stay rigidly attached through passing poses and slopes',()=>{
+  const contacts=[{x:40,y:395},{x:160,y:400}],h=63,f={w:200,h:400};
+  for(const slope of [-.45,0,.45])for(const natural of [-1,1])for(let step=0;step<128;step++){
+    const phase=step/128*h*.64*.15;
+    const feet=movement.gaitAt(phase/.15,h).map(foot=>({...foot,x:foot.x*natural,
+      y:foot.x*natural*slope-foot.lift}));
+    for(let leg=0;leg<2;leg++){
+      const rig={w:h*.5,h,f,contacts,feet,pose:{phase},hand:[.7,.4],skeletal:true,leg,natural};
+      const u=contacts[leg].x/f.w,v=contacts[leg].y/f.h;
+      const sole=movement.deform(u,v,rig),edge=movement.deform(u+.05,v,rig);
+      assert.ok(Math.abs(sole[0]-feet[leg].x)<1e-8,'sole follows its own ankle horizontally');
+      assert.ok(Math.abs(sole[1]-feet[leg].y)<1e-8,'sole meets the ground or swings with its own leg');
+      assert.ok(Math.abs(edge[0]-sole[0]-.05*rig.w)<1e-8,'shoe width stays constant');
+      assert.ok(Math.abs(edge[1]-sole[1])<1e-8,'shoe is not sheared away from the ankle');
+      for(const joint of [.60,(.60+v-.035)/2,v-.035]){
+        const a=movement.deform(u,joint-1e-7,rig),b=movement.deform(u,joint+1e-7,rig);
+        assert.ok(Math.hypot(a[0]-b[0],a[1]-b[1])<.0001,'continuous hip, knee and ankle joins');
+      }
+    }
+  }
+});

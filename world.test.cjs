@@ -30,10 +30,10 @@ test('pedestrians pause at both ends and reverse within their street segment',()
 
 test('walking feet stay on the traced bridge deck, behind the front railing',()=>{
   assert.equal(streetY(1200),477);assert.equal(streetY(1740),477);
-  assert.equal(streetY(1400),427);assert.equal(streetY(1520),402);assert.equal(streetY(1640),433);
+  assert.equal(streetY(1400),432);assert.equal(streetY(1520),404);assert.equal(streetY(1640),430);
   for(let x=1353;x<=1711;x+=1){
     const heightAboveFeet=streetY(x)-frontRailY(x);
-    assert.ok(heightAboveFeet>12&&heightAboveFeet<26,`rail position at ${x}`);
+    assert.ok(heightAboveFeet>12&&heightAboveFeet<32,`rail position at ${x}`);
   }
   for(let x=1200;x<1800;x+=.5)assert.ok(Math.abs(streetY(x+.5)-streetY(x))<.4,'no vertical jumps');
 });

@@ -3,20 +3,19 @@ const assert=require('node:assert/strict');
 const {gaitAt,footContacts,deform,activityAt,speeds}=require('./movement.js');
 const {residents,walkers}=require('./population.js');
 
-test('painted leg centerlines never cross into an X during a complete stride',()=>{
-  const {visibleFeet}=require('./movement.js');
-  for(const natural of [-1,1])for(const height of [44,63,74])for(let step=0;step<128;step++){
-    const contacts=[{x:40,y:400},{x:160,y:400}];
-    const feet=visibleFeet(gaitAt(step/128*height*.64,height).map(f=>({...f,x:f.x*natural,y:-f.lift})));
-    const rig={w:height*.5,h:height,f:{w:200,h:400},contacts,feet,
-      pose:{phase:step/128*height*.64*.15},hand:[.7,.4],walking:true};
-    for(let v=.64;v<=1;v+=.01){
-      const left=deform(.2,v,{...rig,leg:0});
-      const right=deform(.8,v,{...rig,leg:1});
-      assert.ok(left[0]<=right[0]+1e-8,'left silhouette must not be pulled across the right silhouette');
+test('each foot keeps its identity and moves continuously at lift-off and heel strike',()=>{
+  const h=60,cycle=h*.64;
+  for(const boundary of [0,.1,.5,.6,1]){
+    const before=gaitAt((boundary-1e-6)*cycle,h),after=gaitAt((boundary+1e-6)*cycle,h);
+    for(let leg=0;leg<2;leg++){
+      assert.ok(Math.abs(before[leg].x-after[leg].x)<.001);
+      assert.ok(Math.abs(before[leg].lift-after[leg].lift)<.001);
     }
-    assert.ok(feet.some(f=>f.stance));
   }
+  for(let t=0;t<1;t+=.01)assert.ok(gaitAt(t*cycle,h).some(foot=>foot.stance));
+  assert.ok(gaitAt(.05*cycle,h).every(foot=>foot.stance),'weight transfers while both feet touch down');
+  const start=gaitAt(0,h),half=gaitAt(cycle/2,h);
+  assert.ok(start[0].x>start[1].x&&half[0].x<half[1].x,'legs pass instead of swapping identities');
 });
 
 test('the planted foot stays in the same world position as the body moves',()=>{

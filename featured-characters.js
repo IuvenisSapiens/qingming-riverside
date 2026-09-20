@@ -22,7 +22,7 @@
     constructor(){
       this.ready=false;this.sprites={};this.image=new Image();
       this.image.onload=()=>{this.prepare();this.ready=true;};
-      this.image.src='assets/featured-characters-v7.png';
+      this.image.src='assets/featured-characters-v7.webp';
     }
     prepare(){
       const image=this.image,w=image.naturalWidth,h=image.naturalHeight;

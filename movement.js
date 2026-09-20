@@ -48,12 +48,56 @@
   function gaitAt(distance,height,weight=1){
     const step=height*.32,cycle=((distance/(step*2))%1+1)%1;
     return [0,.5].map(offset=>{
-      const t=(cycle+offset)%1,stance=t<.5;
-      const u=stance?t*2:(t-.5)*2;
-      return {x:stance?step/2-step*u:-step/2+step*smooth(u),
-        lift:stance?0:Math.sin(Math.PI*u)*height*.035*weight,stance:stance||weight===0};
+      const t=(cycle+offset)%1,stance=t<.6;
+      const u=stance?t/.6:(t-.6)/.4;
+      // Match horizontal velocity at lift-off and heel strike. A brief
+      // double-support interval lets weight transfer before the next step.
+      const travel=stance?.5-t/.6:-.5-2/3*u+5*u*u-10/3*u*u*u;
+      return {x:step*1.2*travel,
+        lift:stance?0:Math.sin(Math.PI*u)**2*height*.035*weight,
+        swing:stance?0:Math.sin(Math.PI*u),stance:stance||weight===0};
     });
   }
+  // Two-bone leg in the character's local coordinates. The ankle and shoe
+  // share a transform; neither can translate independently of the shin.
+  function legJoints(hip,ankle,thigh,shin,forward){
+    const dx=ankle[0]-hip[0],dy=ankle[1]-hip[1],distance=Math.hypot(dx,dy)||1;
+    const reach=Math.min(distance,thigh+shin-.0001);
+    const along=(thigh*thigh-shin*shin+reach*reach)/(2*reach);
+    const bend=Math.sqrt(Math.max(0,thigh*thigh-along*along));
+    return [hip,[hip[0]+dx/distance*along+dy/distance*bend*forward,
+      hip[1]+dy/distance*along-dx/distance*bend*forward],ankle];
+  }
+  function legSkeleton(rig){
+    const {w,h,f,contacts,feet,leg,natural=1,pose}=rig;
+    const bottom=Math.max(...contacts.map(p=>p.y));
+    const contact=contacts[leg],foot=feet[leg];
+    const cx=(contact.x/f.w-.5)*w,cy=(contact.y-bottom)/f.h*h;
+    const hipY=(.60-bottom/f.h)*h,ankleY=cy-h*.035;
+    const sourceHip=[cx*.25,hipY],sourceAnkle=[cx,ankleY];
+    const length=Math.hypot(cx-sourceHip[0],ankleY-hipY)/2;
+    const cycle=(pose.phase||0)/.15/(h*.64)*Math.PI*2;
+    const bob=(Math.cos(cycle*2)-1)*h*.004*(pose.gaitWeight??1);
+    const target=legJoints([sourceHip[0],hipY+bob],
+      [foot.x,foot.y-h*.035],length*1.035,length*1.035,natural);
+    const source=[sourceHip,[(sourceHip[0]+cx)/2,(hipY+ankleY)/2],sourceAnkle];
+    return {source,target,hipY,ankleY,bottom};
+  }
+  function deformLeg(u,v,rig){
+    const {w,h,f}=rig;
+    const {source,target,hipY,ankleY,bottom}=rig.skeleton??legSkeleton(rig);
+    const sy=(v-bottom/f.h)*h,sx=(u-.5)*w;
+    // Continuous skinning across the knee, rigid below the ankle.
+    const t=clamp((sy-hipY)/(ankleY-hipY)),section=t<.5?0:1;
+    const q=clamp((t-section*.5)*2);
+    const center=[0,1].map(i=>source[section][i]*(1-q)+source[section+1][i]*q);
+    const dest=[0,1].map(i=>target[section][i]*(1-q)+target[section+1][i]*q);
+    // Preserve the shoe's painted shape, translating it with its ankle.
+    // A horizontal cross-section follows the bone centerline continuously;
+    // unlike rotating wide mesh cells, this cannot fold a shoe inside out.
+    return [dest[0]+sx-center[0],dest[1]+sy-center[1]];
+  }
+
   function activityAt(activity,time,phase=0,period=5.6,attention=0){
     const t=time+phase,c=((t%period)+period)%period/period;
     const gesture=Math.max(smooth(c/.18)*(1-smooth((c-.64)/.26)),attention);
@@ -95,6 +139,7 @@
     });
   }
   function deform(u,v,rig){
+    if(rig.skeletal&&rig.leg!==undefined)return deformLeg(u,v,rig);
     const {w,h,f,contacts,feet,pose,hand,walking}=rig;
     const bottom=Math.max(...contacts.map(p=>p.y));
     let x=(u-.5)*w,y=(v-bottom/f.h)*h;
@@ -103,20 +148,20 @@
     // Match the body's rise to the distance-driven feet, at every height.
     if(walking){
       const cycle=(pose.phase||0)/.15/(h*.64)*Math.PI*2;
-      y-=Math.sin(cycle*2)**2*h*.006*upper*(pose.gaitWeight??1);
+      y-=(1-Math.cos(cycle*2))*h*.004*upper*(pose.gaitWeight??1);
     }
     const head=1-smooth((v-.18)/.13),nod=pose.nod||0;
     x-=nod*(v-.29)*h*head;y+=nod*(u-.55)*w*head;
     const du=(u-hand[0])/.4,dv=(v-hand[1])/.26;
     const arm=Math.exp(-(du*du+dv*dv)*2)*upper*smooth((v-.19)/.12);
     x+=(pose.handX||0)*arm;y+=(pose.handY||0)*arm;
-    const weight=rig.leg===undefined?smooth((v-.71)/.22):clamp((v-.64)/.30),mix=smooth((u-.43)/.14);
+    const weight=rig.leg===undefined?smooth((v-.71)/.22):clamp((v-.64)/.30),mix=rig.continuous?clamp((u-contacts[0].x/f.w)/((contacts[1].x-contacts[0].x)/f.w)):smooth((u-.43)/.14);
     if(rig.cloth){
       // A long robe hangs over the legs; it must not become two crossed
       // trouser legs. Let the hem breathe with the stride without folding it.
       const spread=Math.abs(feet[1].x-feet[0].x);
       const rest=Math.abs(contacts[1].x-contacts[0].x)/f.w*w;
-      x+=(u-.5)*(spread-rest)*.35*weight;
+      x+=(u-.5)*Math.max(0,spread-rest)*.5*weight;
       y-=Math.max(...feet.map(foot=>foot.lift||0))*.15*weight;
       return [x,y];
     }
@@ -129,5 +174,5 @@
     }
     return [x,y];
   }
-  return {speeds,hands,createWalkInput,stepWalk,gaitAt,visibleFeet,activityAt,footContacts,deform};
+  return {speeds,hands,createWalkInput,stepWalk,gaitAt,visibleFeet,activityAt,footContacts,deform,legJoints,legSkeleton};
 });
