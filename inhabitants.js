@@ -102,7 +102,7 @@
       const c=mask.getContext('2d');c.fillStyle='#fff';c.fillRect(0,0,f.w,f.h*.71);
       c.beginPath();
       window.ScrollWardrobe.garments[sprite].lower.forEach(([x,y],i)=>i?c.lineTo(x-f.x,y-f.y):c.moveTo(x-f.x,y-f.y));
-      c.closePath();c.fill();c.strokeStyle='#fff';c.lineWidth=5;c.stroke();
+      c.closePath();c.fill();c.strokeStyle='#fff';c.lineWidth=1;c.stroke();
       const layers=['destination-in','destination-out'].map(operation=>{
         const canvas=document.createElement('canvas');canvas.width=f.w;canvas.height=f.h;
         const ctx=canvas.getContext('2d');ctx.drawImage(texture,0,0);
@@ -112,6 +112,34 @@
         if(operation==='destination-out')ctx.clearRect(0,0,f.w,f.h*([.895,.895,.95,.75,.93,.91,0,0,0,.94,.75,.80][sprite]??.90));
         return canvas;
       });
+      // The source painting only contains the portions visible below the
+      // robe. Reconstruct the hidden stocking behind that ink BEFORE
+      // skinning, so a moving shoe always has a leg reaching into the robe.
+      const legs=layers[1],lc=legs.getContext('2d');
+      const contacts=this.contacts[sprite],pixels=texture.getContext('2d').getImageData(0,0,f.w,f.h).data;
+      lc.globalCompositeOperation='destination-over';lc.lineJoin='round';
+      for(const contact of contacts){
+        const center=(contacts[0].x+contacts[1].x)/2;
+        const ankleY=contact.y-f.h*.035,hipX=center+(contact.x-center)*.25;
+        // Sample the original ankle wash rather than recoloring shoes or
+        // copying robe fragments into the moving lower leg.
+        const samples=[];
+        for(let y=Math.floor(ankleY-f.h*.018);y<ankleY+f.h*.012;y++)
+          for(let x=Math.floor(contact.x-f.h*.022);x<contact.x+f.h*.022;x++){
+            if(x<0||x>=f.w||y<0||y>=f.h)continue;
+            const k=(y*f.w+x)*4;
+            if(pixels[k+3]>160&&pixels[k]>160&&pixels[k+1]>140&&pixels[k]>=pixels[k+1]&&pixels[k+1]>=pixels[k+2])samples.push([pixels[k],pixels[k+1],pixels[k+2]]);
+          }
+        samples.sort((a,b)=>a[0]+a[1]+a[2]-b[0]-b[1]-b[2]);
+        const color=samples[Math.floor(samples.length*.65)]??[190,174,140];
+        const half=f.h*.021;
+        lc.beginPath();lc.moveTo(hipX-half*1.25,f.h*.60);
+        lc.lineTo(hipX+half*1.25,f.h*.60);
+        lc.lineTo(contact.x+half*.65,ankleY+f.h*.014);
+        lc.lineTo(contact.x-half*.65,ankleY+f.h*.014);lc.closePath();
+        lc.fillStyle=`rgb(${color.join(',')})`;lc.fill();
+        lc.strokeStyle='rgba(83,70,47,.65)';lc.lineWidth=f.h*.0025;lc.stroke();
+      }
       this.walkLayers.set(texture,layers);return layers;
     }
     react(x,y,time,streetY){
@@ -178,21 +206,30 @@
       // The controlled figure keeps the last foot placement on release.
       // Only the lifted sole settles; the legs do not snap to the source pose.
       const animatedGait=!seated&&(walking||pose.gaitWeight!==undefined);
-      const feet=(animatedGait?movement.gaitAt((pose.phase||0)/.15,h,pose.gaitWeight??1).map(foot=>({...foot,x:foot.x*natural})):contacts.map(c=>({x:(c.x/f.w-.5)*w,lift:0,stance:true})))
+      const longRobe=!art&&[0,1,2,4,5,9,10,11].includes(p.sprite);
+      // Narrow robes take smaller steps. Change the distance per cycle too,
+      // keeping the support foot planted instead of shrinking its motion.
+      const stride=art?.stride??(longRobe?([10,11].includes(p.sprite)?.28:p.sprite===4?.17:.21):.32);
+      const footCenter=((contacts[0].x+contacts[1].x)/(2*f.w)-.5)*w;
+      const feet=(animatedGait?movement.gaitAt((pose.phase||0)/.15,h,pose.gaitWeight??1,stride).map(foot=>({...foot,x:footCenter+foot.x*natural})):contacts.map(c=>({x:(c.x/f.w-.5)*w,lift:0,stance:true})))
         .map(foot=>({...foot,y:(ground?ground(x+foot.x*flip)-y:0)-foot.lift}));
       const hand=art?.grips[0]??movement.hands[p.sprite].map((n,i)=>(n-(i?f.y:f.x))/(i?f.h:f.w));
       // Keep anatomical ownership through the passing pose. The source
       // back leg starts behind the body, regardless of facing direction.
       if(animatedGait&&natural===1)feet.reverse();
       if(animatedGait&&!art&&[0,1,2,10].includes(p.sprite)){
-        const cycle=(pose.phase||0)/.15/(h*.64)*Math.PI*2;
+        const cycle=(pose.phase||0)/.15/(h*stride*2)*Math.PI*2;
         const weight=pose.gaitWeight??1;
         pose={...pose,handX:(pose.handX||0)+Math.sin(cycle)*1.25*weight,
           handY:(pose.handY||0)+Math.cos(cycle)*.35*weight,
           lean:(pose.lean||0)+natural*.012*weight};
       }
-      const rig={w,h,f,contacts,feet,pose,hand,walking,natural,skeletal:animatedGait};
-      const density=3,pw=Math.ceil((w+24)*density),ph=Math.ceil((h+16)*density);
+      const rig={w,h,f,contacts,feet,pose,hand,walking,natural,stride,legKnees:art?.legKnees,skeletal:animatedGait};
+      const density=this.motionDensity??3,pw=Math.ceil((w+24)*density),ph=Math.ceil((h+16)*density);
+      if(this.motionSurface.width<pw||this.motionSurface.height<ph){
+        this.motionSurface.width=Math.max(pw,this.motionSurface.width);
+        this.motionSurface.height=Math.max(ph,this.motionSurface.height);
+      }
       // Small seated/working gestures need fewer mesh rebuilds than camera
       // movement. Stagger them by character; moving feet still update every
       // display frame. Each resident retains just one bounded-size bitmap.
@@ -207,7 +244,6 @@
         surface.setTransform(1,0,0,1,0,0);surface.clearRect(0,0,pw,ph);
         surface.setTransform(density,0,0,density,(w/2+12)*density,(h+8)*density);
         const split=(contacts[0].x+contacts[1].x)/(2*f.w);
-        const longRobe=!art&&[0,1,2,4,5,9,10,11].includes(p.sprite);
         const layers=longRobe&&animatedGait?this.robeLayers(texture,p.sprite,f):null;
         const panels=animatedGait?[
           {columns:[0,split/2,split],rows:[.60,.68,.76,.84,.91,.965,1],leg:0},

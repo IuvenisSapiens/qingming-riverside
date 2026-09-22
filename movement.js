@@ -45,8 +45,8 @@
   }
   const hands=[[211,310],[458,310],[676,297],[992,258],[1210,278],[1425,312],
     [162,748],[332,785],[703,761],[925,706],[1228,811],[1427,753]];
-  function gaitAt(distance,height,weight=1){
-    const step=height*.32,cycle=((distance/(step*2))%1+1)%1;
+  function gaitAt(distance,height,weight=1,stride=.32){
+    const step=height*stride,cycle=((distance/(step*2))%1+1)%1;
     return [0,.5].map(offset=>{
       const t=(cycle+offset)%1,stance=t<.6;
       const u=stance?t/.6:(t-.6)/.4;
@@ -62,7 +62,11 @@
   // share a transform; neither can translate independently of the shin.
   function legJoints(hip,ankle,thigh,shin,forward){
     const dx=ankle[0]-hip[0],dy=ankle[1]-hip[1],distance=Math.hypot(dx,dy)||1;
-    const reach=Math.min(distance,thigh+shin-.0001);
+    // Extend both segments together when a slope puts the target beyond
+    // reach. Clamping only the knee left one shin longer than the other.
+    const stretch=Math.max(1,(distance+.0001)/(thigh+shin));
+    thigh*=stretch;shin*=stretch;
+    const reach=distance;
     const along=(thigh*thigh-shin*shin+reach*reach)/(2*reach);
     const bend=Math.sqrt(Math.max(0,thigh*thigh-along*along));
     return [hip,[hip[0]+dx/distance*along+dy/distance*bend*forward,
@@ -74,13 +78,16 @@
     const contact=contacts[leg],foot=feet[leg];
     const cx=(contact.x/f.w-.5)*w,cy=(contact.y-bottom)/f.h*h;
     const hipY=(.60-bottom/f.h)*h,ankleY=cy-h*.035;
-    const sourceHip=[cx*.25,hipY],sourceAnkle=[cx,ankleY];
+    const center=((contacts[0].x+contacts[1].x)/(2*f.w)-.5)*w;
+    const sourceHip=[center+(cx-center)*.25,hipY],sourceAnkle=[cx,ankleY];
     const length=Math.hypot(cx-sourceHip[0],ankleY-hipY)/2;
-    const cycle=(pose.phase||0)/.15/(h*.64)*Math.PI*2;
+    const cycle=(pose.phase||0)/.15/(h*(rig.stride??.32)*2)*Math.PI*2;
     const bob=(Math.cos(cycle*2)-1)*h*.004*(pose.gaitWeight??1);
-    const target=legJoints([sourceHip[0],hipY+bob],
-      [foot.x,foot.y-h*.035],length*1.035,length*1.035,natural);
-    const source=[sourceHip,[(sourceHip[0]+cx)/2,(hipY+ankleY)/2],sourceAnkle];
+    const hipShift=(pose.sway||0)+(pose.lean||0)*.10*h;
+    const target=legJoints([sourceHip[0]+hipShift,hipY+bob],
+      [foot.x,foot.y-h*.035],length*1.005,length*1.005,natural);
+    const kneeX=rig.legKnees?.[leg];
+    const source=[sourceHip,[kneeX===undefined?(sourceHip[0]+cx)/2:(kneeX-.5)*w,(hipY+ankleY)/2],sourceAnkle];
     return {source,target,hipY,ankleY,bottom};
   }
   function deformLeg(u,v,rig){
@@ -146,8 +153,8 @@
     const upper=1-smooth((v-.62)/.15);
     x+=(pose.sway||0)*upper+(pose.lean||0)*(.7-v)*h*upper;
     // Match the body's rise to the distance-driven feet, at every height.
-    if(walking){
-      const cycle=(pose.phase||0)/.15/(h*.64)*Math.PI*2;
+    if(walking||rig.skeletal){
+      const cycle=(pose.phase||0)/.15/(h*(rig.stride??.32)*2)*Math.PI*2;
       y-=(1-Math.cos(cycle*2))*h*.004*upper*(pose.gaitWeight??1);
     }
     const head=1-smooth((v-.18)/.13),nod=pose.nod||0;

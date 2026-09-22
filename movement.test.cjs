@@ -62,3 +62,27 @@ test('residents use their work setting and gestures freeze with simulation time'
   assert.equal(speeds.walk,102);assert.equal(speeds.auto,62);
   assert.ok(walkers.every(p=>p.speed>=23));
 });
+
+test('short robe strides retain ground contact and velocity through touchdown',()=>{
+  for(const stride of [.17,.21,.28,.32])for(const height of [44,63,74]){
+    const cycle=height*stride*2;
+    const anchor=gaitAt(0,height,1,stride)[0].x;
+    for(let n=0;n<60;n++){
+      const d=cycle*n/100,foot=gaitAt(d,height,1,stride)[0];
+      assert.ok(foot.stance);assert.ok(Math.abs(d+foot.x-anchor)<1e-8);
+    }
+    for(const t of [0,.1,.5,.6,1]){
+      const a=gaitAt((t-1e-6)*cycle,height,1,stride),b=gaitAt((t+1e-6)*cycle,height,1,stride);
+      a.forEach((f,i)=>assert.ok(Math.hypot(f.x-b[i].x,f.lift-b[i].lift)<.001));
+    }
+  }
+});
+
+test('out-of-reach slope targets extend both leg bones proportionally',()=>{
+  const {legJoints}=require('./movement.js');
+  for(const forward of [-1,1])for(const ankle of [[12,30],[-18,30],[2,12]]){
+    const [hip,knee,foot]=legJoints([0,0],ankle,10,10,forward);
+    assert.deepEqual(foot,ankle);
+    assert.ok(Math.abs(Math.hypot(knee[0]-hip[0],knee[1]-hip[1])-Math.hypot(foot[0]-knee[0],foot[1]-knee[1]))<1e-8);
+  }
+});

@@ -6,15 +6,15 @@
   'use strict';
   const clamp=(n,a=0,b=1)=>Math.min(b,Math.max(a,n));
   const smooth=(a,b,t)=>{const u=clamp((t-a)/(b-a));return u*u*(3-2*u);};
-  const stages=[[0,'gather','风起'],[8,'shower','疏雨'],[22,'downpour','骤雨'],[47,'easing','雨歇'],[65,'afterglow','天青'],[88,'complete','雨过天青']];
+  const stages=[[0,'gather','风起'],[3,'shower','疏雨'],[16,'downpour','骤雨'],[47,'easing','雨歇'],[65,'afterglow','天青'],[88,'complete','雨过天青']];
   function weatherAt(time,active=true){
     const t=Math.max(0,time);let stage='clear',label='晴和';
     if(active)for(const [at,id,name] of stages)if(t>=at){stage=id;label=name;}
     const gathering=smooth(0,12,t),ending=smooth(62,88,t);let rain=0;
     if(active){
-      if(t<8)rain=0;
-      else if(t<22)rain=.5*smooth(8,22,t);
-      else if(t<47)rain=.5+.5*smooth(22,34,t);
+      if(t<3)rain=0;
+      else if(t<16)rain=.5*smooth(3,16,t);
+      else if(t<47)rain=.5+.5*smooth(16,28,t);
       else if(t<65)rain=1-.82*smooth(47,65,t);
       else rain=.18*(1-smooth(65,75,t));
     }
@@ -42,11 +42,11 @@
     return hash;
   }
   function carriesUmbrella(p){
-    return Boolean(p?.id);
+    return Boolean(p?.id)&&!p.indoor&&!['balcony','pavilion','interior'].includes(p.layer);
   }
   function umbrellaProgress(s,p){
     if(!carriesUmbrella(p)||s.rain<.015)return 0;
-    const start=8+seed(identity(p)+37)*9.5;
+    const start=3+seed(identity(p)+37)*9.5;
     return smooth(start,start+2.6,s.time);
   }
   function line(ctx,x1,y1,x2,y2){ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();}
@@ -103,7 +103,7 @@
   function drawRain(ctx,s,range,height=724,reduced=false){
     if(s.gloom>.005){ctx.save();ctx.fillStyle=`rgba(42,61,63,${.34*s.gloom})`;ctx.globalCompositeOperation='multiply';ctx.fillRect(range[0]-5,0,range[1]-range[0]+10,height);ctx.restore();}
     if(s.rain<.015)return;
-    const count=Math.round((reduced?28:120)*s.rain),span=range[1]-range[0],fall=reduced?0:s.time*(260+120*s.rain);
+    const count=Math.round((reduced?28:120)*s.rain),span=range[1]-range[0],fall=reduced?0:s.time*(310+70*s.rain);
     ctx.save();ctx.strokeStyle=`rgba(215,224,216,${.16+.34*s.rain})`;ctx.lineWidth=.48+.35*s.rain;ctx.lineCap='round';
     for(let i=0;i<count;i++){
       const x=range[0]+((seed(i+11)*span+fall*.16+seed(i+81)*170)%span),y=(seed(i+27)*height+fall)%height,length=8+18*s.rain+seed(i+5)*12;

@@ -48,6 +48,33 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.7';
   let towPointer=null,towHand=null,storyShot=null,savedSketch=null,sketchWasRunning=false,towLatch=false;
   try{const saved=JSON.parse(localStorage.getItem('qingming-bridge-sketch-v1'));if(saved&&/^data:image\/jpeg;base64,/.test(saved.image))savedSketch=saved;}catch{}
   document.querySelector('#towMemo').hidden=!savedSketch;
+  const sketchScenes=[
+    {id:'country',mark:'野',label:'郊野春行',title:'郊野春行',subtitle:'薄雾初开，行旅沿着柳岸走向汴京',position:'4%',scale:1.08},
+    {id:'river',mark:'漕',label:'汴河漕运',title:'汴河漕运',subtitle:'舟楫相接，船工与脚夫把南北货物送入京城',position:'29%',scale:1.12},
+    {id:'bridge',mark:'桥',label:'虹桥险情',title:'虹桥过船',subtitle:'漕船顺流而下，桥上行人呼喊示警',position:'50%',scale:1},
+    {id:'market',mark:'市',label:'桥头百业',title:'桥头百业',subtitle:'茶摊、食肆与行商聚在桥头，叫卖声不绝',position:'61%',scale:1.13},
+    {id:'gate',mark:'门',label:'城门车马',title:'城门车马',subtitle:'驼队与车马穿过城门，把远方带进东京',position:'82%',scale:1.12},
+    {id:'capital',mark:'京',label:'东京繁市',title:'东京繁市',subtitle:'酒楼商铺沿街铺展，百业与万民汇成繁华',position:'96%',scale:1.09}
+  ];
+  const sketchDialog=document.querySelector('#bridgeSketch'),sketchImage=document.querySelector('#sketchImage'),sketchStage=document.querySelector('.sketch-stage'),sketchScenesNav=document.querySelector('#sketchScenes');
+  let activeSketchScene='bridge';
+  for(const [index,scene] of sketchScenes.entries()){
+    const button=document.createElement('button');button.type='button';button.className='sketch-scene';button.dataset.scene=scene.id;
+    button.innerHTML=`<i aria-hidden="true">${scene.mark}</i><span>${scene.label}</span>`;
+    button.setAttribute('aria-label',`查看${scene.label}`);button.addEventListener('click',()=>showSketchScene(scene.id));sketchScenesNav.append(button);
+  }
+  function showSketchScene(id){
+    const scene=sketchScenes.find(item=>item.id===id)||sketchScenes[2];activeSketchScene=scene.id;
+    document.querySelector('#sketchEyebrow').textContent=`画中故事 · ${['一','二','三','四','五','六'][sketchScenes.indexOf(scene)]}`;
+    document.querySelector('#sketchTitle').textContent=scene.title;document.querySelector('#sketchSubtitle').textContent=scene.subtitle;
+    sketchStage.dataset.scene=scene.id;sketchStage.style.setProperty('--scene-position',scene.position);sketchStage.style.setProperty('--scene-scale',scene.scale);
+    sketchImage.alt=`《清明上河图》故事场景：${scene.label}`;
+    const nextSource=scene.id==='bridge'?savedSketch.image:'assets/qingming-panorama-v1.webp';
+    if(sketchImage.getAttribute('src')!==nextSource){sketchImage.style.opacity='0';sketchImage.onload=()=>{sketchImage.style.opacity='1';sketchImage.onload=null;};sketchImage.src=nextSource;}else sketchImage.style.opacity='1';
+    for(const button of sketchScenesNav.children)button.setAttribute('aria-current',String(button.dataset.scene===scene.id));
+    document.querySelector('#sketchSeal').textContent=scene.id==='bridge'?(savedSketch.helped?'助船':'观船'):'清明';
+    document.querySelector('#saveSketch').hidden=scene.id!=='bridge';
+  }
   const sound=new window.InkSound();
   const hailFerry=document.querySelector('#hailFerry');
   let hailPending=false;
@@ -456,9 +483,7 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.7';
   }
   function openSketch(){
     if(!savedSketch)return;crossing.pull(0);sketchWasRunning=state.running;state.running=false;updateMotion();
-    document.querySelector('#sketchImage').src=savedSketch.image;
-    document.querySelector('#sketchSeal').textContent=savedSketch.helped?'助船':'观船';
-    document.querySelector('#bridgeSketch').showModal();
+    showSketchScene('bridge');sketchDialog.showModal();
   }
   function travel(x,pending=null){
     if(aboard())return;
@@ -1042,6 +1067,12 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.7';
   towGrip.addEventListener('keyup',e=>{if(e.code==='Space'){e.preventDefault();crossing.pull(0);}});
   document.querySelector('#towMemo').addEventListener('click',openSketch);
   document.querySelector('#closeSketch').addEventListener('click',()=>document.querySelector('#bridgeSketch').close());
+  sketchDialog.addEventListener('keydown',e=>{
+    if(!['ArrowLeft','ArrowRight'].includes(e.code))return;e.preventDefault();
+    const index=sketchScenes.findIndex(scene=>scene.id===activeSketchScene),direction=e.code==='ArrowRight'?1:-1;
+    showSketchScene(sketchScenes[(index+direction+sketchScenes.length)%sketchScenes.length].id);
+    sketchScenesNav.querySelector('[aria-current="true"]')?.focus();
+  });
   document.querySelector('#bridgeSketch').addEventListener('close',()=>{state.running=sketchWasRunning;updateMotion();});
   document.querySelector('#saveSketch').addEventListener('click',()=>{if(!savedSketch)return;const a=document.createElement('a');a.href=savedSketch.image;a.download='虹桥过船.jpg';a.click();});
   reduced.addEventListener('change',e=>{state.running=!e.matches;if(e.matches)stopAuto();updateMotion();});
