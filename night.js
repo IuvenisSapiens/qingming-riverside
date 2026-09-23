@@ -124,6 +124,39 @@
     ctx.fillStyle=wash;ctx.fillRect(range[0]-2,0,range[1]-range[0]+4,724);
     ctx.restore();
   }
+  // Shared by both streets so candle color, paper glow and lantern shapes agree.
+  function drawWindow(ctx,w,a,{mullions=true}={}){
+    if(a<=0)return;
+    ctx.save();ctx.globalCompositeOperation='screen';
+    glow(ctx,w.x+w.w/2,w.y+w.h/2,w.w*.95,w.h*1.1,a*.22);
+    // Translucent light preserves the original timber and lattice texture.
+    const fill=ctx.createLinearGradient(0,w.y,0,w.y+w.h);
+    fill.addColorStop(0,`rgba(255,175,65,${a*.36})`);fill.addColorStop(.65,`rgba(255,207,117,${a*.62})`);fill.addColorStop(1,`rgba(227,142,52,${a*.36})`);
+    ctx.fillStyle=fill;ctx.fillRect(w.x,w.y,w.w,w.h);
+    ctx.fillStyle=`rgba(77,39,19,${a*.34})`;
+    ctx.globalCompositeOperation='source-over';
+    if(mullions){
+      for(let x=w.x+7;x<w.x+w.w-2;x+=9)ctx.fillRect(x,w.y,1,w.h);
+      ctx.fillRect(w.x,w.y+w.h*.52,w.w,1);
+    }
+    ctx.restore();
+  }
+  function drawLantern(ctx,lamp,a,time=0,reduced=false,index=0){
+    if(a<=0)return;
+    const {x,y,size=1,groundY=472}=lamp;
+    const shimmer=reduced?1:.97+.03*Math.sin(time*1.7+index*2.3);
+    ctx.save();ctx.globalCompositeOperation='screen';
+    glow(ctx,x,y+10*size,32*size,41*size,a*.5*shimmer);
+    glow(ctx,x,groundY,55,14,a*.18);
+    ctx.translate(x,y);ctx.scale(size,size);
+    ctx.globalCompositeOperation='source-over';ctx.globalAlpha=a;
+    ctx.strokeStyle='#9b7144';ctx.lineWidth=.8;ctx.beginPath();ctx.moveTo(0,-10);ctx.lineTo(0,2);ctx.stroke();
+    ctx.fillStyle='#eeaa55';ctx.beginPath();ctx.ellipse(0,10,5.5,8,0,0,Math.PI*2);ctx.fill();
+    ctx.fillStyle='#ffe0a1';ctx.fillRect(-2,4,4,12);
+    ctx.fillStyle='#895138';ctx.fillRect(-4,1,8,2);ctx.fillRect(-4,17,8,2);
+    ctx.strokeStyle='#c2884c';ctx.beginPath();ctx.moveTo(0,19);ctx.lineTo(0,24);ctx.stroke();
+    ctx.restore();
+  }
   function draw(ctx,level,range,time=0,reduced=false){
     if(level<=0)return;
     drawAtmosphere(ctx,level,range);
@@ -131,29 +164,12 @@
     windows.forEach((w,i)=>{
       if(w.x+w.w+65<range[0]||w.x-65>range[1])return;
       const a=lightAt(level,i);if(a<=0)return;
-      glow(ctx,w.x+w.w/2,w.y+w.h/2,w.w*.95,w.h*1.1,a*.22);
-      // Translucent light preserves the original timber and lattice texture.
-      const fill=ctx.createLinearGradient(0,w.y,0,w.y+w.h);
-      fill.addColorStop(0,`rgba(255,175,65,${a*.36})`);fill.addColorStop(.65,`rgba(255,207,117,${a*.62})`);fill.addColorStop(1,`rgba(227,142,52,${a*.36})`);
-      ctx.fillStyle=fill;ctx.fillRect(w.x,w.y,w.w,w.h);
-      ctx.fillStyle=`rgba(77,39,19,${a*.34})`;
-      ctx.globalCompositeOperation='source-over';
-      for(let x=w.x+7;x<w.x+w.w-2;x+=9)ctx.fillRect(x,w.y,1,w.h);
-      ctx.fillRect(w.x,w.y+w.h*.52,w.w,1);ctx.globalCompositeOperation='screen';
+      drawWindow(ctx,w,a);
     });
     lanterns.forEach((lamp,i)=>{
       const {x,y}=lamp;if(x+95<range[0]||x-95>range[1])return;
       const a=lightAt(level,i+7);if(a<=0)return;
-      const shimmer=reduced?1:.97+.03*Math.sin(time*1.7+i*2.3);
-      glow(ctx,x,y+10,32,41,a*.5*shimmer);
-      glow(ctx,x,472,55,14,a*.18);
-      ctx.globalCompositeOperation='source-over';ctx.globalAlpha=a;
-      ctx.strokeStyle='#9b7144';ctx.lineWidth=.8;ctx.beginPath();ctx.moveTo(x,y-10);ctx.lineTo(x,y+2);ctx.stroke();
-      ctx.fillStyle='#eeaa55';ctx.beginPath();ctx.ellipse(x,y+10,5.5,8,0,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#ffe0a1';ctx.fillRect(x-2,y+4,4,12);
-      ctx.fillStyle='#895138';ctx.fillRect(x-4,y+1,8,2);ctx.fillRect(x-4,y+17,8,2);
-      ctx.strokeStyle='#c2884c';ctx.beginPath();ctx.moveTo(x,y+19);ctx.lineTo(x,y+24);ctx.stroke();
-      ctx.globalCompositeOperation='screen';ctx.globalAlpha=1;
+      drawLantern(ctx,lamp,a,time,reduced,i);
       // Broken strokes follow the water instead of a solid mirrored beam.
       for(let j=0;j<19;j++){
         const yy=551+j*6.5,sway=reduced?0:Math.sin(time*.65+j*.9+i)*3;
@@ -164,5 +180,5 @@
     });
     ctx.restore();
   }
-  return {Nightfall,draw,drawSky,drawAtmosphere,lightAt,crowdPresence,windows,lanterns};
+  return {Nightfall,draw,drawSky,drawAtmosphere,drawWindow,drawLantern,lightAt,crowdPresence,windows,lanterns};
 });

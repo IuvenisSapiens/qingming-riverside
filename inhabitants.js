@@ -239,6 +239,9 @@
         const image=document.createElement('canvas');image.width=pw;image.height=ph;
         cached={image,context:image.getContext('2d',{willReadFrequently:true}),tick:-1};this.residentFrames.set(p.id,cached);
       }
+      if(cached&&(cached.image.width!==pw||cached.image.height!==ph||cached.density!==density)){
+        cached.image.width=pw;cached.image.height=ph;cached.density=density;cached.tick=-1;
+      }
       if(!cached||cached.tick!==tick){
         const surface=cached?.context??this.motionContext;
         surface.setTransform(1,0,0,1,0,0);surface.clearRect(0,0,pw,ph);
@@ -310,19 +313,32 @@
       ctx.save();ctx.transform(a,b,c,d,p.target[0]-a*sx-c*sy,p.target[1]-b*sx-d*sy);
       ctx.drawImage(texture,sx,sy,w,h,sx,sy,w,h);ctx.restore();
     }
+    cell(ctx,texture,p,q,r,s){
+      // Undeformed/affine cells need one image sample and no clipping path.
+      // Only use the fast path when both triangles have the same transform.
+      if(Math.abs(q.target[0]+r.target[0]-p.target[0]-s.target[0])<1e-8&&
+         Math.abs(q.target[1]+r.target[1]-p.target[1]-s.target[1])<1e-8){
+        this.quad(ctx,texture,p,q,r);
+      }else{
+        this.triangle(ctx,texture,[p,q,r]);this.triangle(ctx,texture,[q,s,r]);
+      }
+    }
     triangle(ctx,texture,vertices){
       const [p,q,r]=vertices,[sx,sy]=p.source,ux=q.source[0]-sx,uy=q.source[1]-sy,vx=r.source[0]-sx,vy=r.source[1]-sy;
       const det=ux*vy-uy*vx,dx=q.target[0]-p.target[0],dy=q.target[1]-p.target[1],ex=r.target[0]-p.target[0],ey=r.target[1]-p.target[1];
       const a=(dx*vy-ex*uy)/det,b=(dy*vy-ey*uy)/det,c=(ex*ux-dx*vx)/det,d=(ey*ux-dy*vx)/det;
       const cx=(p.target[0]+q.target[0]+r.target[0])/3,cy=(p.target[1]+q.target[1]+r.target[1])/3;
       ctx.save();ctx.beginPath();
-      vertices.forEach(({target:[x,y]},i)=>{const distance=Math.hypot(x-cx,y-cy)||1;const px=x+(x-cx)/distance*.13,py=y+(y-cy)/distance*.13;i?ctx.lineTo(px,py):ctx.moveTo(px,py);});
+      for(let i=0;i<3;i++){
+        const [x,y]=vertices[i].target,distance=Math.hypot(x-cx,y-cy)||1;
+        const px=x+(x-cx)/distance*.13,py=y+(y-cy)/distance*.13;i?ctx.lineTo(px,py):ctx.moveTo(px,py);
+      }
       // Limit sampling to this mesh cell instead of resampling the whole
       // portrait behind every small triangular clip.
-      const left=Math.max(0,Math.floor(Math.min(...vertices.map(v=>v.source[0])))-1);
-      const top=Math.max(0,Math.floor(Math.min(...vertices.map(v=>v.source[1])))-1);
-      const width=Math.min(texture.width,Math.ceil(Math.max(...vertices.map(v=>v.source[0])))+1)-left;
-      const height=Math.min(texture.height,Math.ceil(Math.max(...vertices.map(v=>v.source[1])))+1)-top;
+      const left=Math.max(0,Math.floor(Math.min(sx,q.source[0],r.source[0]))-1);
+      const top=Math.max(0,Math.floor(Math.min(sy,q.source[1],r.source[1]))-1);
+      const width=Math.min(texture.width,Math.ceil(Math.max(sx,q.source[0],r.source[0]))+1)-left;
+      const height=Math.min(texture.height,Math.ceil(Math.max(sy,q.source[1],r.source[1]))+1)-top;
       ctx.closePath();ctx.clip();ctx.transform(a,b,c,d,p.target[0]-a*sx-c*sy,p.target[1]-b*sx-d*sy);
       ctx.drawImage(texture,left,top,width,height,left,top,width,height);ctx.restore();
     }

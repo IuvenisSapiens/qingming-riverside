@@ -1,7 +1,7 @@
 (() => {
   'use strict';
   class InkSound {
-    constructor(){this.enabled=false;this.running=true;this.night=false;this.lastStroke=-Infinity;this.rainLevel=0;this.musicLevel=.68;}
+    constructor(){this.enabled=false;this.running=true;this.night=false;this.festival=false;this.lastStroke=-Infinity;this.rainLevel=0;this.musicLevel=.68;}
     async toggle(){
       try{
         if(!this.context)this.create();
@@ -20,8 +20,9 @@
       for(let i=0;i<data.length;i++){brown=(brown+Math.random()*.04-.02)/1.015;data[i]=brown*3;}
       this.master=c.createGain();this.master.gain.value=0;this.master.connect(c.destination);
       this.music=c.createGain();this.music.gain.value=this.musicLevel;
-      this.dayMusic=this.createMusicTrack('pubuniaosheng.mp3',this.night?0:1);
-      this.nightMusic=this.createMusicTrack('夜晚背景音乐.mp3',this.night?1:0);
+      this.dayMusic=this.createMusicTrack('pubuniaosheng.mp3',!this.festival&&!this.night?1:0);
+      this.nightMusic=this.createMusicTrack('夜晚背景音乐.mp3',!this.festival&&this.night?1:0);
+      this.festivalMusic=this.createMusicTrack('zhongqiu.mp3',this.festival?1:0);
       this.music.connect(this.master);
       const rain=c.createBufferSource();rain.buffer=noise;rain.loop=true;
       const rainFilter=c.createBiquadFilter();rainFilter.type='bandpass';rainFilter.frequency.value=1850;rainFilter.Q.value=.34;
@@ -36,17 +37,24 @@
       source.connect(gain);gain.connect(this.music);
       return {element,gain,source};
     }
-    currentMusic(){return (this.night?this.nightMusic:this.dayMusic).element;}
+    currentTrack(){return this.festival?this.festivalMusic:(this.night?this.nightMusic:this.dayMusic);}
+    currentMusic(){return this.currentTrack().element;}
     setNight(active){
-      this.night=Boolean(active);if(!this.context)return;
-      const now=this.context.currentTime,current=this.night?this.nightMusic:this.dayMusic,previous=this.night?this.dayMusic:this.nightMusic;
+      this.night=Boolean(active);this.switchMusic();
+    }
+    setFestival(active){
+      this.festival=Boolean(active);this.switchMusic();
+    }
+    switchMusic(){
+      if(!this.context)return;
+      const now=this.context.currentTime,current=this.currentTrack(),previous=[this.dayMusic,this.nightMusic,this.festivalMusic].filter(track=>track!==current);
       clearTimeout(this.musicSwitchTimer);
       current.gain.gain.setTargetAtTime(1,now,.45);
-      previous.gain.gain.setTargetAtTime(0,now,.45);
+      previous.forEach(track=>track.gain.gain.setTargetAtTime(0,now,.45));
       if(this.enabled&&this.running){
         current.element.play().catch(()=>{});
-        this.musicSwitchTimer=setTimeout(()=>{if((this.night?this.dayMusic:this.nightMusic)===previous)previous.element.pause();},2400);
-      }else previous.element.pause();
+        this.musicSwitchTimer=setTimeout(()=>{for(const track of previous)if(track!==this.currentTrack())track.element.pause();},2400);
+      }else previous.forEach(track=>track.element.pause());
     }
     setRunning(running){
       this.running=running;if(!this.context)return;
@@ -55,7 +63,7 @@
       this.setMusicLevel(this.rainLevel,.35);
       clearTimeout(this.pauseTimer);
       if(active)this.currentMusic().play().catch(()=>{});
-      else this.pauseTimer=setTimeout(()=>{if(!this.enabled||!this.running){this.dayMusic.element.pause();this.nightMusic.element.pause();}},600);
+      else this.pauseTimer=setTimeout(()=>{if(!this.enabled||!this.running){this.dayMusic.element.pause();this.nightMusic.element.pause();this.festivalMusic.element.pause();}},600);
     }
     setMusicLevel(rain,timeConstant){
       if(!this.context)return;

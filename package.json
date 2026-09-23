@@ -2,6 +2,7 @@
   "name": "qingming-riverside",
   "private": true,
   "scripts": {
+    "test": "node --test *.test.cjs",
     "build": "node build-static.mjs",
     "dev": "npm run build && wrangler dev",
     "check": "npm run build && wrangler deploy --dry-run",

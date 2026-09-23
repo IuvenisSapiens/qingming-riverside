@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#e2d4b6"><title>孙羊正店 · 店中一日</title><link rel="icon" href="data:,"><link rel="stylesheet" href="sunyang.css?v=31-responsive-menu"><script src="movement.js?v=8.3" defer></script><script src="inhabitants.js?v=13.2-mesh" defer></script><script src="sunyang-actor.js?v=8-mesh" defer></script><script src="sunyang-host.js?v=6-mesh" defer></script><script src="sunyang-guests.js?v=9-mesh" defer></script><script src="sunyang-sound.js?v=2-shop-music" defer></script><script src="sunyang.js?v=30-viewport-menu" defer></script><link rel="stylesheet" href="buttons.css?v=3"></head>
+<body data-phase="door">
+<header class="page-header"><a class="quiet-link" href="index.html#sunyang">← 返回长卷</a><div class="header-actions"><button class="quiet-link" id="musicToggle" aria-label="关闭店内音乐" aria-pressed="true">音乐开</button><button class="quiet-link" id="restart">重新入店</button></div></header>
+<main>
+<section class="intro"><h1>孙羊正店</h1></section>
+<section class="scene" aria-label="可探索的孙羊正店店堂">
+<div class="scene-scroll" id="sceneScroll"><div class="scene-world" id="sceneWorld">
+<img id="roomArt" src="assets/sunyang-interior-clean-v3.webp" alt="淡彩线描的宋代酒肆：左侧临河窗席，中间堂中食桌，右侧备餐柜台，伙计与食客在木构店堂中忙碌" fetchpriority="high">
+<!-- Window views use the same street artwork as the outdoor scene. -->
+<svg id="roomExterior" class="room-exterior" viewBox="0 0 1536 1024" aria-label="窗外为街市中的同一座木桥、石砌河岸和临河房屋" role="img">
+<defs><clipPath id="riverWindow"><path d="M394 241H568V531H394Z"/></clipPath><clipPath id="marketWindow"><path d="M727 337H752V420L740 420 727 427Z M772 337H879V417L858 420 838 408 818 416 798 411 772 423Z"/></clipPath></defs>
+<g clip-path="url(#riverWindow)"><svg x="392" y="239" width="178" height="294" viewBox="1220 20 530 704" preserveAspectRatio="xMidYMid slice"><image href="assets/street-empty.webp" width="2172" height="724"/></svg></g>
+<g clip-path="url(#marketWindow)"><svg x="725" y="333" width="156" height="97" viewBox="1740 180 420 260" preserveAspectRatio="xMidYMid slice"><image href="assets/street-empty.webp" width="2172" height="724"/></svg></g>
+</svg>
+<canvas id="hostActor" aria-hidden="true"></canvas><canvas id="painterActor" width="400" height="352" aria-label="朱衣画师" role="img"></canvas><div id="speechBubble" class="speech-bubble" hidden role="status" aria-live="polite"><small id="speechName"></small><span id="speechText"></span></div>
+<div class="scene-wash" aria-hidden="true"></div>
+<button class="spot entrance" data-place="door"><span>走</span><i aria-hidden="true">↗</i></button>
+<button class="spot window" data-place="window" hidden aria-label="临窗坐下"><span>坐</span></button>
+<button class="spot hall" data-place="hall" hidden aria-label="堂中坐下"><span>坐</span></button>
+<button class="spot kitchen" data-place="kitchen" hidden><span>请伙计备餐</span><i aria-hidden="true">↗</i></button>
+<div class="seat-mark" id="seatMark" hidden>此席已候 <span>·</span></div>
+<div class="table-meal" id="tableMeal" aria-label="已上桌的酒食" hidden></div>
+<div id="actions" class="scene-actions"></div>
+<div class="steam steam-one" aria-hidden="true"></div><div class="steam steam-two" aria-hidden="true"></div>
+</div></div>
+<p class="pan-guide">← 左右滑动画卷，看看店堂 →</p>
+
+<div class="menu-shade" id="menuShade" hidden aria-hidden="true"></div>
+<aside class="menu-sheet" id="menuSheet" aria-labelledby="menuTitle" hidden><button class="close-menu" id="closeMenu" aria-label="收起食单">×</button><p class="eyebrow">今日食单</p><h2 id="menuTitle">客官，想用些什么？</h2><p class="menu-note">选几样合意的，再请伙计备餐。</p><div id="dishes"></div><p id="selectionNote" class="selection-note" aria-live="polite">尚未点食</p><button class="ink-button" id="prepare" disabled>请伙计备餐 <span>→</span></button></aside>
+</section>
+
+<nav id="steps" class="steps" aria-label="入店进度"></nav>
+</main>
+<div id="announcement" class="sr-only" role="status" aria-live="polite"></div>
+</body></html>

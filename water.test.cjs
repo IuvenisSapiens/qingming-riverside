@@ -33,7 +33,7 @@ test('Three.js water is vendored locally and the scene enters through an ES modu
   assert.ok(fs.statSync(`${__dirname}/vendor/three.module.js`).size>600000);
   assert.ok(fs.statSync(`${__dirname}/vendor/three.core.js`).size>1400000);
   const loader=fs.readFileSync(`${__dirname}/dynamic-loader.js`,'utf8');
-  assert.match(loader,/add\('scene\.js\?v=[\d.]+',true\)/);
+  assert.match(loader,/add\('scene\.js\?v=[\w.-]+',true\)/);
   assert.match(fs.readFileSync(`${__dirname}/scene.js`,'utf8'),/new ThreeWaterRenderer\(\)/);
 });
 
@@ -61,5 +61,5 @@ test('waterfall composites after the mill foreground and water time never resets
   assert.ok(scene.indexOf('pass:1')>scene.indexOf('districts.animate(ctx'));
   assert.match(renderer,/uTime.value=time/);
   assert.doesNotMatch(renderer,/uTime\s*\*\s*uMotion/);
-  assert.match(renderer,/CanvasTexture\(source\)/);
+  assert.match(renderer,/CanvasTexture\(this\.backdropSource\)/);
 });

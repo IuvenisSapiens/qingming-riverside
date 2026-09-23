@@ -6,9 +6,12 @@
   <meta name="theme-color" content="#e2d4b6">
   <title>清明上河</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="style.css?v=18-story-scroll">
+  <link rel="stylesheet" href="style.css?v=26-counter-layout">
+  <link rel="stylesheet" href="midautumn.css?v=11-day-footer">
+  <link rel="stylesheet" href="buttons.css?v=4">
+  <link rel="stylesheet" href="atlas-festival.css?v=8-load-retry">
 </head>
-<body class="in-atlas">
+<body class="in-atlas scroll-page">
   <aside id="visitCounter" aria-live="polite" aria-label="网站总访问次数">
     <span>入画人次</span><strong id="visitCount">—</strong>
   </aside>
@@ -22,7 +25,9 @@
   </section>
   <button id="atlasReturn" aria-label="返回全景选景" title="全景选景" hidden>全景</button>
   <main id="painting" tabindex="0" aria-label="清明上河街市，左右方向键控制行人，点击街道前往，拖动浏览，空格暂停，双击放大，E键在茶铺、桥头或码头互动">
+    <a id="sunyang" class="street-shop-host" href="sunyang.html" aria-label="客官，进来歇歇脚！尝尝本店特色小吃，点击伙计进入孙羊正店" hidden><span>客官，进来歇歇脚！<br>尝尝本店特色小吃</span><canvas aria-hidden="true"></canvas></a>
     <canvas id="scene" role="img" aria-label="宋代沿河街市立面，茶楼、食铺、木桥，食客、摊贩、行人与船只在画中移动"></canvas>
+    <button id="midautumnEntry" aria-label="入城赏月，进入中秋灯市" aria-haspopup="dialog" hidden><span>入城赏月</span><i aria-hidden="true">↗</i></button>
     <button id="tea" class="scene-action" aria-label="到茶铺饮茶"><span aria-hidden="true"></span></button>
     <button id="bridge" class="scene-action" aria-label="到桥头喂鸟"><span aria-hidden="true"></span></button>
     <button id="dock" class="scene-action" aria-label="到码头唤船"><span aria-hidden="true"></span></button>
@@ -61,8 +66,37 @@
   </div>
   <nav class="district-stops" aria-label="街区位置"><button class="district-stop" data-x="-1550" aria-label="浏览水磨作坊" title="水磨作坊"></button><button class="district-stop" data-x="650" aria-label="浏览茶市" title="茶市"></button><button class="district-stop" data-x="1560" aria-label="浏览虹桥" title="虹桥"></button><button class="district-stop" data-x="3360" aria-label="浏览城门货市" title="城门货市"></button></nav>
   <input id="position" aria-label="画卷位置" type="range" min="0" max="1000" value="0">
-  <script src="visits.js?v=2" defer></script>
-  <script src="dynamic-loader.js?v=12-connected-priority"></script>
-  <script src="atlas.js?v=6-entry-priority"></script>
+  <dialog id="midautumnWelcome" aria-labelledby="midautumnTitle" aria-describedby="midautumnDescription">
+    <div class="festival-street">
+      <header class="festival-header">
+        <button id="midautumnBack" autofocus>← 返回城门</button>
+        <div><p>汴京 · 八月十五</p><h1 id="midautumnTitle">一城灯火 · 中秋夜游</h1></div>
+        <nav class="festival-header-controls" aria-label="夜游设置">
+          <button id="festivalSoundToggle" aria-label="开启背景音乐与环境声" title="开启背景音乐与环境声" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4Zm12-1q4 4 0 8m3-11q6 7 0 14"/><path class="mute-mark" d="m4 3 16 18"/></svg></button>
+          <button id="festivalNightToggle" aria-label="切换夜晚" aria-pressed="false">夜晚</button>
+        </nav>
+      </header>
+      <div id="festivalViewport" tabindex="0" role="region" aria-label="中秋街市长卷，可左右拖动或使用方向键浏览" aria-busy="true">
+        <div id="festivalWorld"><img id="festivalArtwork" data-src="assets/midautumn/festival-elevation-v2.webp" alt="中秋夜的汴京长街：酒楼里人们围桌团圆，灯笼下游人购买月饼与鲜果，气球摊前孩子围聚，街尾舞台上仙女起舞，观众坐在台前赏舞。" draggable="false"><canvas id="festivalActors" aria-label="可游走的中秋街市人物；月下舞台上，仙女翩翩起舞"></canvas><span id="festivalBubble" role="status" hidden></span></div>
+        <p id="festivalLoad" role="status">灯火渐明，长街将启……</p>
+      </div>
+      <footer class="festival-footer">
+        <p id="midautumnDescription">← → / A D 行走 · 点击街道前往 · E 互动 · 拖动看景</p>
+        <nav aria-label="中秋街市景点">
+          <button data-festival-stop="0" aria-current="true">团圆酒楼</button>
+          <button data-festival-stop="0.36">月饼灯市</button>
+          <button data-festival-stop="0.65">彩球游街</button>
+          <button data-festival-stop="1">月下舞台</button>
+        </nav>
+        <input id="festivalPosition" type="range" min="0" max="1000" value="0" aria-label="中秋长街位置">
+      </footer>
+    </div>
+  </dialog>
+  <script src="festival-lighting.js?v=9-window-lights" defer></script>
+  <script src="festival-street.js?v=18-performance" defer></script>
+  <script src="visits.js?v=3-local-preview" defer></script>
+  <script src="dynamic-loader.js?v=29-load-failure"></script>
+  <script src="atlas.js?v=13-load-retry"></script>
+  <script src="atlas-festival.js?v=8-edge-branch"></script>
 </body>
 </html>

@@ -98,3 +98,28 @@ test('each ankle and shoe stay rigidly attached through passing poses and slopes
     }
   }
 });
+
+test('resident bitmaps rebuild at the correct size when pixel density changes between scenes',()=>{
+  const crowd=load(),ctx=context();let rebuilds=0;
+  crowd.triangle=()=>rebuilds++;crowd.quad=()=>rebuilds++;
+  crowd.motionSurface={width:512,height:384};crowd.motionContext=context();
+  const art={frame:{w:200,h:400},texture:{width:200,height:400},direction:1,
+    contacts:[{x:40,y:395},{x:160,y:400}],grips:[[.7,.4]]};
+  const item={p:{id:'resident-density',art,h:66},x:0,y:0,direction:1,walking:false,pose:movement.activityAt('drink',1)};
+  crowd.motionDensity=1.25;crowd.sprite(ctx,item,1);
+  const first=crowd.residentFrames.get(item.p.id),before=rebuilds;
+  crowd.motionDensity=3;crowd.sprite(ctx,item,1);
+  assert.ok(rebuilds>before,'same animation tick still rebuilds at a new density');
+  assert.equal(first.image.width,Math.ceil((33+24)*3));
+  assert.equal(first.image.height,Math.ceil((66+16)*3));
+  const after=rebuilds;crowd.sprite(ctx,item,1);assert.equal(rebuilds,after);
+});
+
+test('affine mesh cells skip clips while a deformed fourth corner retains both triangles',()=>{
+  const crowd=load(),calls=[];
+  crowd.quad=(...args)=>calls.push(['quad',args]);crowd.triangle=(...args)=>calls.push(['triangle',args]);
+  const vertices=[[0,0],[1,0],[0,1],[1,1]].map(([x,y])=>({source:[x*100,y*100],target:[x*20+y*2,y*30]}));
+  crowd.cell({}, {}, ...vertices);assert.deepEqual(calls.map(c=>c[0]),['quad']);
+  vertices[3].target[0]+=.01;calls.length=0;
+  crowd.cell({}, {}, ...vertices);assert.deepEqual(calls.map(c=>c[0]),['triangle','triangle']);
+});

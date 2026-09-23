@@ -10,6 +10,8 @@ node_modules/
 .playwright-cli/
 output/
 dist/
+__pycache__/
+*.pyc
 design-qa.md
 PROGRESS.md
 启动画卷.command

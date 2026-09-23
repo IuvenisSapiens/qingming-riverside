@@ -1,4 +1,5 @@
-import {ThreeWaterRenderer} from './water-three.js?v=1.7';
+import {drawFestivalGate,drawFestivalLights,festivalGate} from './midautumn.js?v=9-cached-lanterns';
+import {ThreeWaterRenderer} from './water-three.js?v=1.9-scissor';
 
 (() => {
   'use strict';
@@ -7,6 +8,9 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.7';
   let mainContext=displayContext;
   const nightForeground=document.createElement('canvas');
   const nightForegroundContext=nightForeground.getContext('2d');
+  const backdrop=document.createElement('canvas');
+  const backdropContext=backdrop.getContext('2d',{alpha:false});
+  let backdropKey;
   let ctx=mainContext;
   const population=window.ScrollPopulation;
   const movement=window.ScrollMovement;
@@ -17,9 +21,30 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.7';
   const pedestrianHeight=scale=>scale*46;
   const MIN=population.bounds.min,MAX=population.bounds.max,SPAN=MAX-MIN;
   const inhabitants=new window.Inhabitants(),districts=new window.Districts();
+  window.QingmingFestivalActors={inhabitants,characters};
   const actors=document.createElement('canvas');actors.width=SPAN;actors.height=724;
   const actorContext=actors.getContext('2d');
   const painting = document.querySelector('#painting');
+  const shopHost=document.querySelector('#sunyang'),shopPortrait=shopHost.querySelector('canvas');
+  const shopArt=new Image();let shopReady=false;
+  shopArt.onload=()=>{
+    const c=shopPortrait.getContext('2d');shopPortrait.width=shopArt.naturalWidth;shopPortrait.height=shopArt.naturalHeight;c.drawImage(shopArt,0,0);
+    const pixels=c.getImageData(0,0,shopPortrait.width,shopPortrait.height).data;let l=shopPortrait.width,r=0,t=shopPortrait.height,b=0;
+    for(let y=0;y<shopPortrait.height;y++)for(let x=0;x<shopPortrait.width;x++)if(pixels[(y*shopPortrait.width+x)*4+3]>96){l=Math.min(l,x);r=Math.max(r,x);t=Math.min(t,y);b=Math.max(b,y);}
+    shopPortrait.width=r-l+1;shopPortrait.height=b-t+1;c.drawImage(shopArt,l,t,r-l+1,b-t+1,0,0,r-l+1,b-t+1);shopReady=true;
+  };shopArt.src='assets/sunyang-host-v2.webp';
+  const festivalEntry=document.querySelector('#midautumnEntry');
+  const festivalWelcome=document.querySelector('#midautumnWelcome');
+  let festivalWasRunning=false;
+  festivalEntry.addEventListener('click',()=>{
+    festivalWasRunning=state.running;state.running=false;walkInput.clear();updateMotion();
+    festivalWelcome.dataset.entryNight=String(Boolean(nightfall.target));
+    sound.setFestival(true);sound.setRunning(!document.hidden);
+    festivalWelcome.showModal();
+  });
+  document.querySelector('#midautumnBack').addEventListener('click',()=>festivalWelcome.close());
+  festivalWelcome.addEventListener('keydown',e=>e.stopPropagation());
+  festivalWelcome.addEventListener('close',()=>{sound.setFestival(false);state.running=festivalWasRunning;updateMotion();festivalEntry.focus({preventScroll:true});});
   const slider = document.querySelector('#position');
   const play = document.querySelector('#play');
   const motion = document.querySelector('#motion');
@@ -366,7 +391,11 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.7';
   }
   function drawActors(){
     const layerOrigin=Math.floor(state.camera)-80,layerWidth=Math.ceil(state.width/state.scale)+160,density=Math.min((devicePixelRatio||1)*state.scale,4);
-    if(actors.width!==Math.ceil(layerWidth*density)||actors.height!==H*density){actors.width=Math.ceil(layerWidth*density);actors.height=H*density;}
+    // Canvas dimensions are integers. Comparing to a fractional height reset
+    // the backing store on every frame at fractional zoom/DPR values.
+    const pixelWidth=Math.ceil(layerWidth*density),pixelHeight=Math.ceil(H*density);
+    if(actors.width!==pixelWidth)actors.width=pixelWidth;
+    if(actors.height!==pixelHeight)actors.height=pixelHeight;
     actorContext.setTransform(1,0,0,1,0,0);actorContext.clearRect(0,0,actors.width,actors.height);actorContext.setTransform(density,0,0,density,-layerOrigin*density,0);
     ctx=actorContext;ctx.globalAlpha=.91;
     const range=[state.camera,state.camera+state.width/state.scale];
@@ -665,6 +694,23 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.7';
     stroke([[835,360],[836+sway*.5,374]],'#746d56',.5);
     stroke([[841,360],[841+sway*.5,375]],'#d0c09a',.5);
   }
+  let shopHostNearby=false;
+  function updateShopHostPosition(){
+    const hostX=(380-state.camera)*state.scale,hostY=(483-state.viewY)*state.scale;
+    shopHost.style.transform=`translate3d(${hostX}px,${hostY}px,0) translate(-50%,-100%)`;shopHost.style.width=`${38*state.scale}px`;shopHost.style.setProperty('--host-label-size',`${11*state.scale}px`);
+    shopHost.hidden=!shopReady||Boolean(nightfall.target)||nightLevel>0||hostX<-60||hostX>state.width+60||hostY<0||hostY>state.height+100;
+    const nearby=!shopHost.hidden&&!aboard()&&Math.abs(player.x-380)<(shopHostNearby?190:160);
+    if(nearby!==shopHostNearby){
+      shopHostNearby=nearby;
+      shopHost.classList.toggle('is-nearby',nearby);
+    }
+  }
+  function updateFestivalEntryPosition(){
+    const gateX=(festivalGate.x-state.camera)*state.scale;
+    const gateY=(festivalGate.y-state.viewY)*state.scale;
+    festivalEntry.style.transform=`translate3d(${gateX}px,${gateY}px,0) translate(-50%,-50%)`;
+    festivalEntry.hidden=gateX<50||gateX>state.width-50||gateY<40||gateY>state.height-50;
+  }
   function updateSpotPositions(){
     const oy=-state.viewY*state.scale;
     for(const [id,spot] of Object.entries(spots)){
@@ -756,6 +802,7 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.7';
   function render(){
     const {width,height,scale,camera,time:t}=state;
     if(!state.loaded)return;
+    inhabitants.motionDensity=Math.min(4,Math.max(1,(devicePixelRatio||1)*scale));
     // Keep the last complete frame while a fast jump reaches an unloaded district.
     // Never draw actors over missing architecture.
     if(!districts.hasRange(camera,camera+width/scale)){
@@ -767,18 +814,30 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.7';
       }
       return;
     }
-    ctx.fillStyle='#e2d4b6';ctx.fillRect(0,0,width,height);
-    ctx.save();ctx.translate(-camera*scale,-state.viewY*scale);ctx.scale(scale,scale);ctx.imageSmoothingQuality='high';
-    districts.draw(ctx,artwork,camera,camera+width/scale);
     const visibleRange=[camera,camera+width/scale];
-    window.QingmingWeather.drawWetGround(ctx,weatherSample,visibleRange,streetY);
+    const nextBackdropKey=[camera,state.viewY,width,height,scale,canvas.width,canvas.height,districts.revision,weatherSample.wet].join(':');
+    if(backdropKey!==nextBackdropKey){
+      if(backdrop.width!==canvas.width)backdrop.width=canvas.width;
+      if(backdrop.height!==canvas.height)backdrop.height=canvas.height;
+      backdropContext.setTransform(ctx.getTransform());
+      backdropContext.fillStyle='#e2d4b6';backdropContext.fillRect(0,0,width,height);
+      backdropContext.save();backdropContext.translate(-camera*scale,-state.viewY*scale);backdropContext.scale(scale,scale);
+      backdropContext.imageSmoothingQuality='high';
+      districts.draw(backdropContext,artwork,...visibleRange);
+      window.QingmingWeather.drawWetGround(backdropContext,weatherSample,visibleRange,streetY);
+      backdropContext.restore();backdropKey=nextBackdropKey;
+    }
+    // Copy at physical pixel size: retain the original high-DPI detail without
+    // resampling three large district paintings when the camera is stationary.
+    ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.drawImage(backdrop,0,0);ctx.restore();
+    ctx.save();ctx.translate(-camera*scale,-state.viewY*scale);ctx.scale(scale,scale);
     // Dynamic layers already render above display resolution. Bilinear
     // compositing avoids filtering those changing canvases again every frame.
     ctx.imageSmoothingQuality='low';
 
     if(threeWater.active){
-      const layer=threeWater.render({time:t,camera,viewY:state.viewY,width,height,scale,source:canvas,backdropKey:[camera,state.viewY,width,height,scale,canvas.width,canvas.height,districts.revision,weatherSample.wet].join(':')});
-      ctx.save();ctx.globalAlpha=.92;ctx.drawImage(layer,camera,state.viewY,width/scale,height/scale);ctx.restore();
+      const layer=threeWater.render({time:t,camera,viewY:state.viewY,width,height,scale,source:backdrop,backdropKey});
+      ctx.save();ctx.globalAlpha=.92;threeWater.composite(ctx,layer);ctx.restore();
     }else drawRiverSurface(t,camera-50,camera+width/scale+50);
     // Light the architecture first. All people, furniture masks, boats and
     // weather then share a transparent foreground that occludes those lights.
@@ -793,6 +852,7 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.7';
       nightForegroundContext.setTransform(ctx.getTransform());
       mainContext=nightForegroundContext;ctx=mainContext;
     }
+    drawFestivalGate(ctx,reduced.matches?0:t,visibleRange,nightLevel);
     ctx.globalAlpha=.93;
     if(crossing.visible&&camera<1930&&camera+width/scale>1240)window.BridgeArt.drawShip(ctx,crossing,boatSprite,inhabitants,characters,t);
     teaService();pennant();drawBirds();westLanding();drawActors();districts.animate(ctx,t,camera,camera+width/scale,threeWater.active);drawTouchRipples();
@@ -800,7 +860,7 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.7';
     // after the mill, but before boats, passengers and weather.
     if(threeWater.active&&camera<-1450&&camera+width/scale>-1560){
       const fall=threeWater.render({time:t,camera,viewY:state.viewY,width,height,scale,pass:1});
-      ctx.drawImage(fall,camera,state.viewY,width/scale,height/scale);
+      threeWater.composite(ctx,fall);
     }
     drawBoatDisturbances();
     boat(ferry.x,ferry.y,world.ferryGeometry.scale,t+3,ferry.direction,['approaching','departing','returning','sailing'].includes(ferry.mode));
@@ -827,7 +887,11 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.7';
       mainContext=displayContext;ctx=displayContext;ctx.globalAlpha=1;
       ctx.drawImage(nightForeground,camera,state.viewY,width/scale,height/scale);
     }
+    drawFestivalLights(ctx,reduced.matches?0:t,visibleRange,nightLevel);
     ctx.restore();ctx.globalAlpha=1;
+    // The visible host shares the exact camera of this completed canvas frame.
+    // Keep this out of the throttled UI updates to prevent panning judder.
+    updateShopHostPosition();updateFestivalEntryPosition();
     if(!storyShot&&crossing.stage==='guide'&&crossing.progress>.25)captureStory();
     // DOM controls and diagnostic attributes do not need to invalidate layout
     // at the same rate as the moving canvas.
@@ -902,7 +966,7 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.7';
   }
   function frame(now){
     const elapsed=last?(now-last)/1000:0,dt=Math.min(elapsed,.05);last=now;
-    if(!document.hidden&&!document.body.classList.contains('in-atlas')&&!state.loadingRange){
+    if(!document.hidden&&!document.body.classList.contains('in-atlas')&&!festivalWelcome.open&&!state.loadingRange){
       if(elapsed>0){
         frameSample.elapsed+=elapsed;frameSample.count++;if(elapsed>.025)frameSample.slow++;
         if(frameSample.elapsed>=1){
@@ -931,6 +995,9 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.7';
       if(state.running&&life.shouldCallFerry(state.time,ferry,player))world.summonFerry(ferry,'east');
       state.target=clamp(state.target,MIN,state.max);
       state.camera+=(state.target-state.camera)*(reduced.matches?1:1-Math.exp(-dt*10));
+      // End easing below a small fraction of a physical pixel, so an idle
+      // camera stops invalidating/uploading the entire backdrop indefinitely.
+      if(Math.abs(state.target-state.camera)*state.scale<.01)state.camera=state.target;
       if(player.follow&&state.zoom>1.01)state.viewY+=(followHeight()-state.viewY)*(1-Math.exp(-dt*4));
       sound.update(state.time,state.running,ferry,state.camera,state.width/state.scale);
       sound.street(life.events,state.camera,state.width/state.scale);
@@ -944,7 +1011,7 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.7';
     requestAnimationFrame(frame);
   }
   painting.addEventListener('pointerdown',e=>{
-    if(e.target.closest('#ferryRide,#towRope,#towGrip'))return;
+    if(e.target.closest('#ferryRide,#towRope,#towGrip,#midautumnEntry,#sunyang'))return;
     painting.focus({preventScroll:true});painting.setPointerCapture(e.pointerId);
     touches.set(e.pointerId,{x:e.clientX,y:e.clientY});
     if(touches.size===2){
@@ -1023,10 +1090,17 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.7';
     if(rainEvent.active){announce(`清明时雨：${weatherSample.label}`);return;}
     rainEvent.start();weatherSample=rainEvent.sample();resume();announce('河面起风，云气渐低');
   });
-  document.querySelector('#sound').addEventListener('click',async()=>{
-    const enabled=await sound.toggle();const b=document.querySelector('#sound');
-    b.setAttribute('aria-pressed',String(enabled));b.setAttribute('aria-label',enabled?'关闭背景音乐与环境声':'开启背景音乐与环境声');b.title=b.getAttribute('aria-label');
-    painting.dataset.sound=enabled?'on':'off';sound.setRunning(state.running&&!document.hidden);
+  const soundButtons=[document.querySelector('#sound'),document.querySelector('#festivalSoundToggle')];
+  for(const button of soundButtons)button.addEventListener('click',async()=>{
+    soundButtons.forEach(b=>{b.disabled=true;});
+    try{
+      sound.setRunning((state.running||festivalWelcome.open)&&!document.hidden);
+      const enabled=await sound.toggle();
+      for(const b of soundButtons){
+        b.setAttribute('aria-pressed',String(enabled));b.setAttribute('aria-label',enabled?'关闭背景音乐与环境声':'开启背景音乐与环境声');b.title=b.getAttribute('aria-label');
+      }
+      painting.dataset.sound=enabled?'on':'off';
+    }finally{soundButtons.forEach(b=>{b.disabled=false;});}
   });
   document.querySelector('#follow').addEventListener('click',()=>{setFollow(true);state.target=cameraForPlayer();announce(aboard()?'镜头跟随船只':'镜头跟随行人');});
   for(const id of Object.keys(spots))document.getElementById(id).addEventListener('click',e=>{if(e.detail===0)activateSpot(id);});
@@ -1050,7 +1124,7 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.7';
   document.addEventListener('keyup',e=>{if(['ArrowLeft','ArrowRight','KeyE'].includes(e.code))crossing.pull(0);releaseWalking(e.code);});
   const releaseControls=()=>{walkInput.clear();player.velocity=0;player.moving=false;release();};
   addEventListener('blur',releaseControls);
-  document.addEventListener('visibilitychange',()=>{releaseControls();last=0;frameSample.elapsed=0;frameSample.count=0;frameSample.slow=0;sound.setRunning(state.running&&!document.hidden);});
+  document.addEventListener('visibilitychange',()=>{releaseControls();last=0;frameSample.elapsed=0;frameSample.count=0;frameSample.slow=0;sound.setRunning((state.running||festivalWelcome.open)&&!document.hidden);});
   document.querySelector('#fullscreen').addEventListener('click',async()=>{
     try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch{document.querySelector('#fullscreen').hidden=true;}
   });

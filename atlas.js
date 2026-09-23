@@ -9,6 +9,8 @@
     {id:'gate',name:'城门货市',box:[1680,75,488,445],label:[1908,567],world:3360,description:'城楼俯瞰繁忙的货市，车马从城门出入。临河货栈与摊铺相连，汇聚汴京的日用百货。'}
   ];
   const atlas=document.querySelector('#atlas'),frame=document.querySelector('#atlasFrame'),img=document.querySelector('#atlasImage'),message=document.querySelector('#atlasMessage');
+  const fileMode=location.protocol==='file:';
+  const localPreviewHint='请双击项目中的“打开清明上河.command”启动交互预览';
   const reduced=matchMedia('(prefers-reduced-motion: reduce)');
   const stage=document.createElement('div');stage.id='atlasStage';frame.before(stage);stage.append(frame);
   const nav=document.querySelector('#atlasPlaces');nav.replaceChildren();atlas.append(nav);nav.setAttribute('aria-label','长卷景点');nav.setAttribute('role','navigation');
@@ -16,7 +18,7 @@
   const svg=document.createElementNS(NS,'svg');svg.id='atlasDraft';svg.setAttribute('viewBox',`0 0 ${W} ${H}`);svg.setAttribute('aria-hidden','true');frame.append(svg);
   const defs=document.createElementNS(NS,'defs');svg.append(defs);
   // Full-size registered artwork only. Missing artwork never falls back to a filter.
-  const layers=new Map();let draftReady=false,selected=null,hovered=null,focused=null,paintingHovered=false,revision=0,lastTrigger=null;
+  const layers=new Map();let draftReady=false,selected=null,hovered=null,focused=null,paintingHovered=false,revision=0,lastTrigger=null,entryStatus=false;
   const card=document.createElement('article');card.id='atlasCard';card.hidden=true;card.innerHTML='<span class="atlas-kicker">汴河拾景</span><h2></h2><p></p>';atlas.append(card);
   const live=document.createElement('button');live.id='atlasLive';live.hidden=true;live.setAttribute('aria-label','走入动态街市');live.innerHTML='<span>走入动态街市</span><i aria-hidden="true">↗</i>';frame.append(live);
   const back=document.createElement('button');back.id='atlasOverview';back.textContent='← 退回长卷';back.hidden=true;atlas.append(back);
@@ -48,12 +50,18 @@
     const id=null;
     const showingChoices=paintingHovered||Boolean(focused);
     for(const p of places){layers.get(p.id).layer.classList.toggle('revealed',false);for(const b of document.querySelectorAll(`[data-place="${p.id}"]`))b.classList.toggle('preview',showingChoices||id===p.id);for(const b of document.querySelectorAll(`.atlas-scene-marker[data-place="${p.id}"]`)){b.classList.toggle('visible',showingChoices);b.tabIndex=showingChoices?0:-1;}}
-    message.textContent=selected?'可直接切换景点 · Esc 退回长卷':showingChoices?'选择景点进入动态街市':'移笔游目，点景入画';
+    if(!entryStatus)message.textContent=fileMode?localPreviewHint:selected?'可直接切换景点 · Esc 退回长卷':showingChoices?'点击景点漫游街市':'移笔游目，点景入画';
   }
   function layout(){
     const r=stage.getBoundingClientRect();if(!r.width||!r.height)return;
-    let scale=Math.min(r.width/W,r.height/H),tx=(r.width-W*scale)/2,ty=(r.height-H*scale)/2;
+    // Keep both banks at the viewport edges; the sky has its own responsive fit.
+    let scale=r.width/W,tx=0,ty=Math.max(0,r.height-H*scale);
+    if(r.width<=600)ty=(r.height-H*scale)*.6;
+    const skyline=ty+H*scale*.2,skyHeight=Math.min(r.width/3,Math.max(100,skyline/.62));
+    stage.style.setProperty('--atlas-sky-height',`${skyHeight}px`);
+    stage.style.setProperty('--atlas-sky-top',`${Math.max(0,skyline-skyHeight*.62)}px`);
     if(selected){const [x,y,w,h]=selected.box,pad=Math.min(40,r.width*.06);scale=Math.min((r.width-pad*2)/w,(r.height-pad*2)/h);tx=r.width/2-(x+w/2)*scale;ty=r.height/2-(y+h/2)*scale;}
+    frame.style.setProperty('--atlas-label-scale',String(1/scale));
     frame.style.transform=`translate(${tx}px,${ty}px) scale(${scale})`;
     atlas.dataset.place=selected?.id||'overview';
   }
@@ -73,26 +81,37 @@
   function isolate(on){for(const el of document.body.children)if(el!==atlas&&el.tagName!=='SCRIPT')el.inert=on;document.querySelector('#atlasReturn').hidden=on;}
   async function launchScene(place,button){
     if(!place)return;
+    if(fileMode){message.textContent=localPreviewHint;return;}
     const token=++revision,original=button.innerHTML;
+    entryStatus=true;
     button.disabled=true;button.querySelector('span').textContent='正在进入…';const icon=button.querySelector('i');if(icon)icon.hidden=true;message.textContent='正在展开动态街市，请稍候';
     try{
       await window.loadQingmingScene();
       await window.prepareQingmingEntry(place.world);
       if(token!==revision)return;
       window.dispatchEvent(new CustomEvent('atlas-enter',{detail:{x:place.world}}));
+      entryStatus=false;
       atlas.hidden=true;document.body.classList.remove('in-atlas');isolate(false);document.querySelector('#painting').focus();
       window.warmQingmingDistricts();
     }catch(error){
-      console.error(error);message.textContent='动态街市加载失败，请检查网络后重试';
+      console.error(error);message.textContent='动态街市加载失败，请检查网络后重试。';
+      const retry=document.createElement('button');retry.id='atlasRetry';retry.textContent='重新载入';
+      retry.addEventListener('click',()=>location.reload());message.append(retry);
     }finally{button.disabled=false;button.innerHTML=original;}
   }
   live.addEventListener('click',()=>launchScene(selected,live));
   document.querySelector('#atlasReturn').addEventListener('click',()=>{atlas.hidden=false;document.body.classList.add('in-atlas');isolate(true);overview();});
   const load=()=>{if(img.naturalWidth!==W||img.naturalHeight!==H){message.textContent='原图尺寸已改变，请重新校准景点坐标';return;}layout();preview();};
   img.addEventListener('load',load);img.addEventListener('error',()=>{message.textContent='画卷加载失败，请刷新重试';});if(img.complete&&img.naturalWidth)load();
+
   new ResizeObserver(layout).observe(stage);reduced.addEventListener('change',layout);isolate(true);
+  // The shop's return link lands outside the same tea-market building.
+  if(location.hash==='#sunyang'&&!fileMode){
+    const tea=places.find(place=>place.id==='tea');
+    void launchScene({...tea,world:380},nav.querySelector('[data-place="tea"]'));
+  }
   // Optional replacement must have exactly the same canvas, crop and registration.
-  fetch('assets/atlas-draft.json').then(r=>r.json()).then(async manifest=>{
+  if(!fileMode)fetch('assets/atlas-draft.json').then(r=>r.json()).then(async manifest=>{
     if(!manifest.src)return;
     const draft=new Image();draft.src=manifest.src;await draft.decode();
     if(draft.naturalWidth!==W||draft.naturalHeight!==H)throw Error('Draft dimensions do not match panorama');

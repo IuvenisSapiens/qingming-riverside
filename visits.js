@@ -3,6 +3,7 @@
   const counter=document.querySelector('#visitCounter');
   const value=document.querySelector('#visitCount');
   if(!counter||!value)return;
+  if(location.protocol==='file:'||location.hostname==='127.0.0.1'||location.hostname==='localhost')return;
 
   const endpoint=location.hostname.endsWith('github.io')
     ?'https://qingming-riverside.zhangxianxie6.workers.dev/api/visits'

@@ -1,4 +1,9 @@
 .git/
+.wrangler/
+__pycache__/
+dist/
+*.py
+*.pyc
 .github/
 .playwright-cli/
 output/

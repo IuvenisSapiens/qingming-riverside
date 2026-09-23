@@ -2,6 +2,7 @@
 #visitCounter{position:fixed;top:max(22px,env(safe-area-inset-top));right:max(24px,env(safe-area-inset-right));z-index:30;display:flex;align-items:baseline;gap:9px;padding:7px 10px;color:#6a5b43;background:rgba(231,217,187,.78);border:1px solid rgba(117,106,79,.22);backdrop-filter:blur(6px);font-family:"Songti SC","Noto Serif SC",serif;letter-spacing:.12em;pointer-events:none}
 #visitCounter span{font-size:10px;opacity:.72}#visitCounter strong{font-size:16px;font-weight:400;letter-spacing:.08em;font-variant-numeric:tabular-nums}
 #visitCounter[data-state="error"]{display:none}
+body:not(.in-atlas) #visitCounter{right:auto;left:max(96px,calc(env(safe-area-inset-left) + 80px))}
 #atlas{position:fixed;inset:0;z-index:20;background:#e2d4b6;display:flex;flex-direction:column;justify-content:center;overflow:hidden;color:#504d3d}
 .atlas-heading{text-align:center;margin:0 0 clamp(20px,4vh,48px);transition:opacity .35s}
 .atlas-heading>span{font:11px "Songti SC",serif;letter-spacing:.5em;color:#827152}
@@ -148,3 +149,41 @@ body.night .district-stop::after{background:#d2b078;border-color:#ecd29a}
 @media(max-width:600px){#atlasPlaces .atlas-label:first-child,#atlasPlaces .atlas-label:last-child{left:auto}.atlas-heading{margin-bottom:0}}
 @media(max-width:600px){#visitCounter{top:max(12px,env(safe-area-inset-top));right:max(12px,env(safe-area-inset-right));padding:5px 7px;gap:6px}#visitCounter span{font-size:9px}#visitCounter strong{font-size:13px}}
 #atlas{grid-template-columns:minmax(0,1fr);justify-content:stretch}
+
+/* Shop sign anchored to the tea-market building in panorama coordinates. */
+#atlasFrame .atlas-shop{position:absolute;left:625px;top:315px;z-index:8;display:inline-flex;align-items:center;justify-content:center;gap:13px;min-height:58px;padding:12px 17px;box-sizing:border-box;background:rgba(48,39,28,.46);border:1px solid rgba(255,255,255,.85);border-radius:3px;color:#fff;text-decoration:none;white-space:nowrap;text-shadow:0 1px 4px rgba(20,15,10,.8);transform:translate(-50%,-100%) scale(var(--atlas-label-scale,1));transform-origin:50% 100%;transition:background .2s,box-shadow .2s}
+#atlasFrame .atlas-shop>span{font:400 23px/1.2 'Kaiti SC','STKaiti','KaiTi',cursive;letter-spacing:.1em}
+#atlasFrame .atlas-shop>i{display:grid;place-items:center;width:30px;height:30px;border:1px solid #fff;border-radius:50%;font:400 24px/1 'Songti SC',serif;font-style:normal;text-shadow:none}
+#atlasFrame .atlas-shop .atlas-shop-hint{position:absolute;bottom:calc(100% + 10px);left:50%;transform:translateX(-50%);font:11px/1.4 'Songti SC',serif;letter-spacing:.14em;color:#584832;text-shadow:0 1px 3px #eee0be,0 0 8px #eee0be}
+#atlasFrame .atlas-shop::after{content:'';position:absolute;left:50%;top:100%;height:22px;border-left:1px solid #fffdf0cc;pointer-events:none}
+#atlasFrame .atlas-shop::before{content:'';position:absolute;left:calc(50% - 3px);top:calc(100% + 20px);width:5px;height:5px;background:#fff5d9;border:1px solid #70583f;border-radius:50%;box-shadow:0 0 0 3px #fff5d933;pointer-events:none}
+#atlasFrame .atlas-shop:hover{background:rgba(48,39,28,.68);box-shadow:0 3px 16px #44301b25}
+#atlasFrame .atlas-shop:focus-visible{outline:2px solid #fff5da;outline-offset:4px}
+@media(max-width:600px){#atlasFrame .atlas-shop{min-height:44px;padding:8px 10px;gap:8px}#atlasFrame .atlas-shop>span{font-size:17px}#atlasFrame .atlas-shop>i{width:23px;height:23px;font-size:19px}#atlasFrame .atlas-shop .atlas-shop-hint{font-size:9px;bottom:calc(100% + 7px)}#atlasFrame .atlas-shop::after{height:10px}#atlasFrame .atlas-shop::before{top:calc(100% + 8px)}#atlasMessage{line-height:1.7;white-space:normal}}
+
+/* The shop invitation belongs to destination 02, leaving the painting clear. */
+#atlasPlaces .atlas-tea-entry{position:relative;display:flex;align-items:center;justify-content:center}
+#atlasPlaces .atlas-shop{position:absolute;bottom:calc(100% + 14px);left:50%;transform:translateX(-50%);display:inline-flex;align-items:center;gap:10px;padding:10px 14px;white-space:nowrap;border:1px solid #78684b77;border-radius:3px;background:#f0e3c6b3;color:#51452f;text-decoration:none;box-shadow:0 3px 12px #62513a0d;font:20px "Kaiti SC","STKaiti","KaiTi",serif;letter-spacing:.1em}
+#atlasPlaces .atlas-shop i{display:grid;place-items:center;width:23px;height:23px;border:1px solid #8c7a59;border-radius:50%;font:18px "Songti SC",serif;letter-spacing:0}
+#atlasPlaces .atlas-shop-hint{display:none}
+#atlasPlaces .atlas-shop:hover{background:#f4e7cb}#atlasPlaces .atlas-shop:focus-visible{outline:2px solid #78684b;outline-offset:3px}
+@media(max-width:600px){#atlasPlaces{row-gap:12px}#atlasPlaces .atlas-shop{font-size:15px;padding:8px 10px;gap:6px;bottom:calc(100% + 6px)}#atlasPlaces .atlas-shop i{width:19px;height:19px;font-size:15px}}
+
+/* The restaurant entrance belongs to the street, anchored in world coordinates. */
+.street-shop-host{position:absolute;left:0;top:0;z-index:5;display:block;will-change:transform;transform:translate(-50%,-100%);text-decoration:none;color:#fff2d1;cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.street-shop-host[hidden]{display:none}
+.street-shop-host canvas{display:block;width:100%;height:auto;filter:drop-shadow(0 2px 1px #372d2526)}
+.street-shop-host>span{position:absolute;bottom:calc(100% + 12px);left:50%;transform:translateX(-50%);white-space:nowrap;text-align:center;font:600 var(--host-label-size,14px) 'Songti SC',serif;line-height:1.6;letter-spacing:.12em;padding:8px 12px;background:#fff;color:#171717;border:1px solid #d4d0c9;border-radius:12px;text-shadow:none;box-shadow:0 3px 10px #37201626;}
+.street-shop-host>span::after{content:"";position:absolute;bottom:-6px;left:50%;width:10px;height:10px;transform:translateX(-50%) rotate(45deg);background:inherit;border-right:1px solid;border-bottom:1px solid;border-color:inherit;pointer-events:none}
+.street-shop-host:hover>span,.street-shop-host:focus-visible>span{background:#fff;color:#000;border-color:#aaa39a;box-shadow:0 4px 12px #37201638}
+.street-shop-host:focus-visible{outline:1px solid #b3985f;outline-offset:5px}
+
+/* The invitation opens once on approach and closes when the visitor leaves. */
+.street-shop-host>span{opacity:0;visibility:hidden;pointer-events:none;transform:translateX(-50%) translateY(5px) scale(.85);transform-origin:50% calc(100% + 6px);transition:opacity .16s ease,transform .16s ease,visibility .16s}
+.street-shop-host.is-nearby>span{opacity:1;visibility:visible;pointer-events:auto;transform:translateX(-50%) translateY(0) scale(1);animation:host-invite-pop .38s ease-out both}
+@keyframes host-invite-pop{
+  0%{opacity:0;transform:translateX(-50%) translateY(8px) scale(.65)}
+  65%{opacity:1;transform:translateX(-50%) translateY(-2px) scale(1.06)}
+  100%{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}
+}
+@media(prefers-reduced-motion:reduce){.street-shop-host>span{transition:none}.street-shop-host.is-nearby>span{animation:none}}

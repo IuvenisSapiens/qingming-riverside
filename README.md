@@ -29,17 +29,19 @@
 
 **在线体验：[打开画卷](https://xianxie6.github.io/qingming-riverside/)**
 
-备用入口：[Vercel](https://qingming-riverside-nine.vercel.app/)。
+备用入口：[Vercel](https://qingming-riverside-nine.vercel.app/) · [Cloudflare](https://qingming-riverside.zhangxianxie6.workers.dev/)。
 
 GitHub Pages 从 master 分支自动发布；推送代码后可在仓库 Actions 中查看发布状态。Vercel 为独立部署，更新时运行 `vercel deploy --prod`。
 
 无需安装或登录，支持电脑与手机浏览器。画面为原创生成插画，不是《清明上河图》原画扫描。
 
+本次发布检查和测试范围见 [2026-09-24 发布检查](docs/QA-2026-09-24.md)。包含孙羊正店、中秋灯市、手机食单适配和加载恢复。
+
 ## 本地运行
 
-在项目目录运行 `python3 -m http.server 8794 --bind 127.0.0.1`，然后访问 `http://127.0.0.1:8794/`。无需构建步骤，Three.js 已包含在 vendor 中。请通过 HTTP 服务打开，不要直接双击 HTML。
+macOS 可双击项目中的 `打开清明上河.command`，它会启动本地预览并自动打开浏览器。也可以在项目目录运行 `python3 preview.py`。无需构建步骤，Three.js 已包含在 vendor 中。直接双击 `index.html` 会使用 `file://`，浏览器会拦截模块和 Canvas 图片读取，景点无法进入。
 
-测试：安装 Node.js 后运行 `node --test *.test.cjs`。
+测试：安装 Node.js 后运行 `npm test`（82 项）；`npm run check` 验证构建与 Cloudflare 配置。
 
 ## 本版
 

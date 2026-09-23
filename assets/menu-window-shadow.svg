@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="740" viewBox="0 0 480 740">
+ <defs><filter id="soft"><feGaussianBlur stdDeviation="3"/></filter></defs>
+ <g fill="none" stroke="#655b35" stroke-width="5" opacity=".3" filter="url(#soft)">
+  <path d="M35 0v740M445 0v740M0 105h105V0M0 160h62v-55M480 110h-78V0M480 165h-35v-55M0 600h85v140M0 655h35v-55M480 590h-80v150M480 646h-35v-56"/>
+  <path d="M475 740Q401 629 437 507T450 306Q440 224 372 131M441 398q-55-23-82-79M436 513q-46-22-72-67M447 303q-12-79 24-144" stroke-width="11"/>
+ </g>
+ <g fill="#71643b" opacity=".25" filter="url(#soft)">
+  <ellipse cx="399" cy="177" rx="9" ry="25" transform="rotate(-40 399 177)"/><ellipse cx="417" cy="216" rx="9" ry="24" transform="rotate(45 417 216)"/>
+  <ellipse cx="373" cy="327" rx="8" ry="23" transform="rotate(-40 373 327)"/><ellipse cx="392" cy="352" rx="8" ry="24" transform="rotate(50 392 352)"/>
+  <ellipse cx="384" cy="459" rx="9" ry="24" transform="rotate(-55 384 459)"/><ellipse cx="408" cy="478" rx="8" ry="23" transform="rotate(38 408 478)"/>
+  <ellipse cx="449" cy="229" rx="8" ry="24" transform="rotate(35 449 229)"/><ellipse cx="458" cy="189" rx="8" ry="24" transform="rotate(-28 458 189)"/>
+ </g>
+</svg>

@@ -1,0 +1,77 @@
+/* Surface, corner ornaments and focus treatment come from buttons.css. */
+#midautumnEntry{position:absolute;z-index:3;transform:translate(-50%,-50%);display:flex;align-items:center;justify-content:center;gap:7px;width:max-content;height:auto;min-height:44px;padding:12px 18px;cursor:pointer;font:16px "Songti SC",serif;letter-spacing:.12em;white-space:nowrap}
+#midautumnEntry i{font-style:normal;font-size:19px;letter-spacing:0}
+
+#midautumnWelcome{max-width:none;max-height:none;width:100%;height:100%;height:100dvh;margin:0;padding:0;border:0;background:#ded0b1;color:#66563e;overflow:hidden;font-family:"Songti SC",serif}
+#midautumnWelcome::backdrop{background:#202e32}
+.festival-street{position:relative;height:100%;background:radial-gradient(ellipse at top,#f2e6ca,#d7c8a7)}
+.festival-header{position:absolute;inset:0 0 auto;z-index:2;pointer-events:none;display:flex;align-items:center;justify-content:space-between;gap:16px;padding:20px 28px;flex:none}
+.festival-header>div{text-align:center}
+.festival-header p{font-size:10px;letter-spacing:.4em;margin:0 0 8px;opacity:.75}
+.festival-header h1{font-size:clamp(17px,2.2vw,27px);font-weight:400;letter-spacing:.22em;margin:0}
+#midautumnBack,#festivalTour{position:static;flex:none;width:auto;height:auto;padding:13px 20px;font:13px "Songti SC",serif;white-space:nowrap;cursor:pointer}
+#festivalViewport{position:absolute;inset:0;min-height:0;overflow-x:auto;overflow-y:hidden;cursor:grab;scrollbar-width:none;touch-action:pan-x;border:0;background:#293a40;overscroll-behavior-x:contain}
+#festivalViewport::-webkit-scrollbar{display:none}
+#festivalViewport.dragging{cursor:grabbing}
+#festivalArtwork{display:block;height:100%;width:auto;max-width:none;user-select:none;-webkit-user-drag:none}
+#festivalLoad{position:absolute;inset:0;display:grid;place-content:center;color:#eedab4;letter-spacing:.2em;margin:0;pointer-events:none}
+.festival-footer{position:absolute;inset:auto 0 0;z-index:2;pointer-events:none;padding:13px 28px 18px;text-align:center}
+.festival-footer p{font-size:11px;letter-spacing:.18em;margin:0 0 10px;opacity:.7}
+.festival-footer nav{display:flex;justify-content:center;gap:24px}
+.festival-footer button{width:auto;height:auto;padding:6px 9px;border:0;border-radius:0;font:13px "Songti SC",serif;letter-spacing:.15em;color:#78684e}
+.festival-footer button[aria-current="true"]{color:#543b22;box-shadow:0 1px #806441;background:#a88a4820}
+#festivalPosition{display:block;position:static;width:min(640px,90%);height:18px;margin:8px auto 0;accent-color:#937746;cursor:ew-resize}
+@media(max-width:600px){#midautumnEntry{font-size:14px;padding:12px 16px;gap:7px}.festival-header{padding:15px 12px;gap:8px}.festival-header h1{font-size:16px;letter-spacing:.07em}.festival-header p{letter-spacing:.15em}#midautumnBack,#festivalTour{padding:12px 10px;font-size:11px}.festival-footer{padding:12px 8px max(12px,env(safe-area-inset-bottom))}.festival-footer nav{gap:7px}.festival-footer button{font-size:12px;padding:8px 5px;letter-spacing:.05em}}
+#festivalWorld{position:relative;height:100%;width:max-content;}
+#festivalActors{position:absolute;left:0;top:0;pointer-events:none}
+#festivalBubble{position:absolute;transform:translate(-50%,-100%);max-width:260px;min-width:160px;padding:12px 16px;background:#f1e3c5f2;border:1px solid #92774c;color:#654b30;border-radius:5px;font:13px/1.6 "Songti SC",serif;pointer-events:none;text-align:center;box-shadow:0 3px 12px #4d3d2520}
+.festival-actions{display:flex;justify-content:center;gap:12px;margin-bottom:8px}
+.festival-actions button{border:1px solid #9d855850;min-height:36px;padding:7px 15px;touch-action:none}
+#festivalInteract{min-width:150px;background:#b7a17630}
+#festivalTour[aria-pressed="true"]{background:#b7a17650}
+@media(max-width:600px){.festival-footer p{font-size:10px;letter-spacing:0}.festival-actions{margin-bottom:4px}.festival-footer{padding-top:8px}.festival-footer nav{gap:5px}#festivalBubble{font-size:12px;min-width:140px;max-width:190px}}
+
+#festivalPosition{appearance:none;-webkit-appearance:none;width:min(520px,70vw);height:18px;margin:8px auto 0;background:transparent;opacity:.38;transition:opacity .25s;--progress:0%}
+#festivalPosition:hover,#festivalPosition:focus-visible{opacity:.85}
+#festivalPosition::-webkit-slider-runnable-track{height:2px;background:linear-gradient(to right,#71634e 0 var(--progress),#62583f25 var(--progress) 100%)}
+#festivalPosition::-webkit-slider-thumb{appearance:none;-webkit-appearance:none;width:28px;height:18px;margin-top:-8px;border:0;background:transparent}
+#festivalPosition::-moz-range-track{height:2px;background:#62583f25}
+#festivalPosition::-moz-range-progress{height:2px;background:#71634e}
+#festivalPosition::-moz-range-thumb{width:28px;height:18px;border:0;background:transparent}
+.festival-header{display:grid;grid-template-columns:1fr auto 1fr}
+.festival-header #midautumnBack{justify-self:start}
+.festival-header>div{grid-column:2}
+@media(max-width:600px){.festival-header{grid-template-columns:auto 1fr}.festival-header>div{text-align:right}.festival-header h1{font-size:14px}}
+/* Keep the gate entry registered to every rendered camera frame. */
+#midautumnEntry{left:0;top:0;will-change:transform;transition:background .2s,color .2s,border-color .2s,box-shadow .2s}
+#midautumnEntry::before{content:"";position:absolute;inset:-4px;border:1px solid #f4d89d;border-radius:9px 3px;box-shadow:0 0 7px #f1ce83aa,0 0 17px #ebc17155,inset 0 0 7px #f3d79744;pointer-events:none;animation:festival-entry-glow 3.8s ease-in-out infinite}
+#midautumnEntry::after{content:"";display:block;position:absolute;top:-4px;left:9%;width:19px;height:1px;background:#fff0c3;box-shadow:0 0 5px 2px #f9dc9e;pointer-events:none;animation:festival-entry-glint 5.2s ease-in-out infinite}
+@keyframes festival-entry-glow{0%,100%{opacity:.38}50%{opacity:.82}}
+@keyframes festival-entry-glint{0%,100%{left:9%;opacity:0}20%{opacity:.7}62%{left:79%;opacity:.9}78%{opacity:0}}
+@media(prefers-reduced-motion:reduce){#midautumnEntry::before,#midautumnEntry::after{animation:none;opacity:.45}}
+#festivalNightToggle{grid-column:3;justify-self:end;position:static;width:auto;height:auto;min-height:44px;padding:12px 22px;font:13px "Songti SC",serif;cursor:pointer;white-space:nowrap}
+.festival-header-controls{grid-column:3;justify-self:end;display:flex;align-items:center;gap:8px}
+#festivalSoundToggle{position:static;display:grid;place-items:center;flex:none;width:44px;height:44px;padding:10px;color:inherit;cursor:pointer}
+#festivalSoundToggle svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+#festivalSoundToggle[aria-pressed="true"] .mute-mark{display:none}
+#festivalSoundToggle:focus-visible{outline:2px solid #ffe4a9;outline-offset:3px}
+@media(max-width:600px){.festival-header-controls{flex-direction:column;gap:6px}.festival-header{align-items:start}}
+/* One continuous clock drives both the painting and its surrounding paper. */
+#midautumnWelcome{--festival-night:0%}
+.festival-street{background:radial-gradient(ellipse at top,color-mix(in srgb,#f2e6ca,#263342 var(--festival-night)),color-mix(in srgb,#d7c8a7,#263342 var(--festival-night)));color:color-mix(in srgb,#66563e,#e9d9b6 var(--festival-night))}
+.festival-footer button{color:color-mix(in srgb,#78684e,#d1c2a7 var(--festival-night))}
+.festival-footer button[aria-current="true"]{color:color-mix(in srgb,#543b22,#ffe3a4 var(--festival-night));box-shadow:0 1px color-mix(in srgb,#806441,#d7b672 var(--festival-night));background:color-mix(in srgb,#a88a4820,#ffdc9717 var(--festival-night))}
+#festivalPosition{filter:brightness(calc(1 + var(--festival-night)/100%))}
+@media(max-width:600px){.festival-header{grid-template-columns:auto 1fr auto;gap:8px}.festival-header>div{text-align:center}.festival-header h1{font-size:13px;letter-spacing:0}.festival-header p{font-size:8px;letter-spacing:.1em}#festivalNightToggle{padding:12px 15px;font-size:12px}#midautumnBack{padding:12px 10px}}
+@media(prefers-reduced-motion:reduce){.festival-street{transition:none}}
+
+/* The artwork fills the dialog; controls float above the uninterrupted view. */
+.festival-header button,.festival-footer button,.festival-footer input{pointer-events:auto}
+.festival-header>div,.festival-footer p,.festival-footer nav{text-shadow:0 1px 3px color-mix(in srgb,#f2e6ca,#17252e var(--festival-night))}
+.festival-header{padding-top:max(20px,env(safe-area-inset-top))}
+.festival-footer{padding-bottom:max(18px,env(safe-area-inset-bottom))}
+#midautumnWelcome[data-time="day"] .festival-footer{background:linear-gradient(to bottom,#f2e6ca00,#f2e6cac9 35%,#f2e6cae8)}
+#midautumnWelcome[data-time="day"] .festival-footer p{color:#4f3f29;opacity:1;font-size:12px;font-weight:600;text-shadow:0 1px 2px #fff4dc}
+#midautumnWelcome[data-time="day"] .festival-footer button{color:#503d25;font-weight:600;text-shadow:0 1px 2px #fff4dc}
+#midautumnWelcome[data-time="day"] .festival-footer button[aria-current="true"]{color:#60351f;background:#cfb87b66;box-shadow:0 1px #806441}
+@media(max-width:600px){.festival-header{padding-top:max(15px,env(safe-area-inset-top))}.festival-footer{padding-bottom:max(12px,env(safe-area-inset-bottom))}}

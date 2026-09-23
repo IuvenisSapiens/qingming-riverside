@@ -1,0 +1,5 @@
+# 抬头思考动作
+
+内置 imagegen，参考 painter-hd-v1.webp。透明原图 painter-thinking-v1.png；网页版本 painter-thinking-v1.webp。
+
+Use case: identity-preserve. Generate ONE full body transparent character sprite, same young Chinese male painter from reference, specifically its rightmost seated pose. Preserve exact face identity, black headwrap, vermilion robe, ivory cuffs and sash, dark blue-gray trousers, wrapped calves, black shoes, basket backpack with scrolls. Same fine brown ink drawing and muted antique watercolor illustration. Change seated pose only: seated facing RIGHT, knees bent and feet planted at same height, torso upright, head tilted UP about 30 degrees, eyes clearly gazing upwards at an imaginary food menu above, thoughtful wistful small smile, one hand gently resting at chin in contemplation, other hand on thigh. Anatomically natural continuous arms. Entire single figure including feet and backpack, no chair, no food, no text, no scenery, no panel, no cast shadow. TRUE transparent alpha background. Tight composition with modest empty margins, portrait aspect. Exactly one character, NOT a sprite sheet. Crisp high detail.
