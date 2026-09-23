@@ -136,6 +136,8 @@ body.night .district-stop::after{background:#d2b078;border-color:#ecd29a}
 #atlasPlaces .preview,#atlasPlaces [aria-current=true]{color:#392d20;background:#f0e3c666}
 #atlasPlaces .preview em{opacity:.8}#atlasPlaces button:focus-visible{outline:1px solid #746449;outline-offset:3px}
 #atlasMessage{margin:0;font-size:11px;min-height:16px;letter-spacing:.12em}
+#atlas.route-loading>:not(#atlasMessage){visibility:hidden}
+#atlas.route-loading #atlasMessage{position:fixed;inset:50% 0 auto;text-align:center}
 #atlasOverview{position:absolute;right:28px;top:35px;width:auto;height:auto;padding:10px 16px;border:1px solid #88735155;border-radius:2px;background:#eee0c4;color:#574a36;font:13px 'Songti SC',serif}
 #atlas.inspecting{grid-template-rows:auto minmax(0,1fr) 125px auto auto}
 #atlasCard{grid-row:3;justify-self:center;width:min(620px,100%);padding:10px 20px;border-top:1px solid #87734b55;text-align:center;box-sizing:border-box}

@@ -37,14 +37,16 @@ import {ThreeWaterRenderer} from './water-three.js?v=1.9-scissor';
   const festivalWelcome=document.querySelector('#midautumnWelcome');
   let festivalWasRunning=false;
   festivalEntry.addEventListener('click',()=>{
+    if(festivalWelcome.open)return;
     festivalWasRunning=state.running;state.running=false;walkInput.clear();updateMotion();
     festivalWelcome.dataset.entryNight=String(Boolean(nightfall.target));
     sound.setFestival(true);sound.setRunning(!document.hidden);
     festivalWelcome.showModal();
+    window.AtlasTour.setRoute('#midautumn');
   });
   document.querySelector('#midautumnBack').addEventListener('click',()=>festivalWelcome.close());
   festivalWelcome.addEventListener('keydown',e=>e.stopPropagation());
-  festivalWelcome.addEventListener('close',()=>{sound.setFestival(false);state.running=festivalWasRunning;updateMotion();festivalEntry.focus({preventScroll:true});});
+  festivalWelcome.addEventListener('close',()=>{sound.setFestival(false);state.running=festivalWasRunning;updateMotion();if(location.hash==='#midautumn')window.AtlasTour.setRoute('#gate');if(!document.body.classList.contains('in-atlas'))festivalEntry.focus({preventScroll:true});});
   const slider = document.querySelector('#position');
   const play = document.querySelector('#play');
   const motion = document.querySelector('#motion');

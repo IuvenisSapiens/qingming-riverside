@@ -16,7 +16,7 @@
       'assets/people-ink.webp','assets/featured-characters-v7.webp','assets/boat.webp']){
       const link=document.createElement('link');link.rel='preload';link.as='image';link.href=src;document.head.append(link);
     }
-    for(const src of ['scene.js?v=16.18-host-approach','water-three.js?v=1.9-scissor','vendor/three.module.js','vendor/three.core.js']){
+    for(const src of ['scene.js?v=16.19-refresh-route','water-three.js?v=1.9-scissor','vendor/three.module.js','vendor/three.core.js']){
       const link=document.createElement('link');link.rel='modulepreload';link.href=src;document.head.append(link);
     }
   }
@@ -49,7 +49,7 @@
       // ES modules execute once per page. A failed scene needs a page reload,
       // not a second module tag that can wait forever for another ready event.
       sceneStarted=true;
-      try{await Promise.all([add('scene.js?v=16.18-host-approach',true),ready]);}
+      try{await Promise.all([add('scene.js?v=16.19-refresh-route',true),ready]);}
       finally{cleanup();}
     })().catch(error=>{if(!sceneStarted)loading=null;throw error;});
     return loading;

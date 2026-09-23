@@ -76,40 +76,67 @@
     message.textContent=`已到达${p.name} · Esc 退回长卷`;
   }
   function overview(){++revision;selected=null;hovered=null;focused=null;paintingHovered=false;card.hidden=true;live.hidden=true;back.hidden=true;atlas.classList.remove('inspecting');for(const b of nav.children)b.removeAttribute('aria-current');layout();preview();lastTrigger?.focus({preventScroll:true});}
-  back.addEventListener('click',overview);
-  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!atlas.hidden){e.preventDefault();overview();}});
+  back.addEventListener('click',()=>{setRoute('');showOverview();});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!atlas.hidden){e.preventDefault();setRoute('');showOverview();}});
   function isolate(on){for(const el of document.body.children)if(el!==atlas&&el.tagName!=='SCRIPT')el.inert=on;document.querySelector('#atlasReturn').hidden=on;}
-  async function launchScene(place,button){
+  const pendingButtons=new Map();
+  function setRoute(hash){
+    if(location.hash!==hash)history.pushState(null,'',location.pathname+location.search+hash);
+  }
+  async function launchScene(place,button,{restore=false,festival=false}={}){
     if(!place)return;
     if(fileMode){message.textContent=localPreviewHint;return;}
-    const token=++revision,original=button.innerHTML;
+    const token=++revision,original=pendingButtons.get(button)?.original??button.innerHTML;
+    pendingButtons.set(button,{token,original});
+    if(!restore)setRoute(`#${place.id}`);
     entryStatus=true;
     button.disabled=true;button.querySelector('span').textContent='正在进入…';const icon=button.querySelector('i');if(icon)icon.hidden=true;message.textContent='正在展开动态街市，请稍候';
     try{
       await window.loadQingmingScene();
+      if(token!==revision)return;
       await window.prepareQingmingEntry(place.world);
       if(token!==revision)return;
       window.dispatchEvent(new CustomEvent('atlas-enter',{detail:{x:place.world}}));
       entryStatus=false;
       atlas.hidden=true;document.body.classList.remove('in-atlas');isolate(false);document.querySelector('#painting').focus();
+      if(festival)document.querySelector('#midautumnEntry').click();
       window.warmQingmingDistricts();
     }catch(error){
+      if(token!==revision)return;
       console.error(error);message.textContent='动态街市加载失败，请检查网络后重试。';
       const retry=document.createElement('button');retry.id='atlasRetry';retry.textContent='重新载入';
       retry.addEventListener('click',()=>location.reload());message.append(retry);
-    }finally{button.disabled=false;button.innerHTML=original;}
+    }finally{
+      if(pendingButtons.get(button)?.token===token){button.disabled=false;button.innerHTML=original;pendingButtons.delete(button);}
+      if(token===revision)atlas.classList.remove('route-loading');
+    }
   }
   live.addEventListener('click',()=>launchScene(selected,live));
-  document.querySelector('#atlasReturn').addEventListener('click',()=>{atlas.hidden=false;document.body.classList.add('in-atlas');isolate(true);overview();});
+  function showOverview(){
+    entryStatus=false;atlas.classList.remove('route-loading');
+    for(const [button,{original}] of pendingButtons){button.disabled=false;button.innerHTML=original;}
+    pendingButtons.clear();
+    atlas.hidden=false;document.body.classList.add('in-atlas');isolate(true);overview();
+  }
+  document.querySelector('#atlasReturn').addEventListener('click',()=>{setRoute('');showOverview();});
   const load=()=>{if(img.naturalWidth!==W||img.naturalHeight!==H){message.textContent='原图尺寸已改变，请重新校准景点坐标';return;}layout();preview();};
   img.addEventListener('load',load);img.addEventListener('error',()=>{message.textContent='画卷加载失败，请刷新重试';});if(img.complete&&img.naturalWidth)load();
 
   new ResizeObserver(layout).observe(stage);reduced.addEventListener('change',layout);isolate(true);
-  // The shop's return link lands outside the same tea-market building.
-  if(location.hash==='#sunyang'&&!fileMode){
-    const tea=places.find(place=>place.id==='tea');
-    void launchScene({...tea,world:380},nav.querySelector('[data-place="tea"]'));
+  function restoreRoute(){
+    if(fileMode)return;
+    const id=location.hash.slice(1),festival=id==='midautumn';
+    const dialog=document.querySelector('#midautumnWelcome');
+    if(dialog.open&&!festival)dialog.close();
+    // Keep the existing shop return URL landing outside the tea-market building.
+    const place=id==='sunyang'?{...places.find(p=>p.id==='tea'),world:380}:places.find(p=>p.id===(festival?'gate':id));
+    if(!place){showOverview();return;}
+    atlas.classList.add('route-loading');
+    void launchScene(place,nav.querySelector(`[data-place="${place.id}"]`),{restore:true,festival});
   }
+  window.addEventListener('hashchange',restoreRoute);
+  window.AtlasTour={places,layout,setRoute,get selected(){return selected?.id||null;}};
+  restoreRoute();
   // Optional replacement must have exactly the same canvas, crop and registration.
   if(!fileMode)fetch('assets/atlas-draft.json').then(r=>r.json()).then(async manifest=>{
     if(!manifest.src)return;
@@ -117,5 +144,4 @@
     if(draft.naturalWidth!==W||draft.naturalHeight!==H)throw Error('Draft dimensions do not match panorama');
     for(const {art} of layers.values())art.setAttribute('href',manifest.src);draftReady=true;preview();
   }).catch(error=>console.warn('Aligned atlas draft unavailable:',error));
-  window.AtlasTour={places,layout,get selected(){return selected?.id||null;}};
 })();
