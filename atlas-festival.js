@@ -65,26 +65,39 @@
   document.querySelector('#atlasImage').after(layer);
   const c=layer.getContext('2d');
   const art=new Image();art.src='assets/midautumn/lantern-design-v1.png';
-  // Positions are traced against the original composition in a 2048 x 683 space.
+  // Attachment points traced on the panorama itself in its 2048 × 683
+  // reference space. Each y is the timber/rail connection, not the lamp top.
+  // Keep these with the painting transform; never position them in sky space.
   const lamps=[
-    [122,348,24],[183,325,25],[239,350,24],[277,386,24],
-    [367,300,21],[405,307,21],[440,294,22],[480,293,22],
-    [477,350,31],[524,350,28],[575,350,29],[626,350,30],[677,350,31],
-    [545,290,22],[594,288,22],[642,291,22],
-    [754,381,25],[797,381,25],[845,368,22],[887,346,23],
-    [941,312,22],[984,294,21],[1027,284,21],[1073,282,21],[1115,292,21],[1156,309,22],[1200,333,23],
-    [918,265,20],[948,265,20],[772,288,20],[824,287,20],
-    [1279,352,26],[1326,352,26],[1381,352,28],[1434,377,27],
-    [1287,256,19],[1334,255,19],[1390,264,19],
-    [1470,393,29],[1511,394,28],[1557,393,29],
-    [1636,310,26],[1677,311,26],[1720,311,26],[1752,357,27],[1818,389,27],
-    [1830,161,24],[1863,161,24],[1897,161,24],[1932,161,24],
-    [1859,286,32],[1940,285,32],[2016,332,27],
-    [401,469,24],[482,469,24],[998,426,24],[1035,433,22],
-    [1208,475,24],[1255,477,24],[1406,459,26],[1477,467,25],[1847,490,24],
-    [1164,216,14],[1214,214,14],[1270,217,14],[1463,228,15],[1519,239,15],
-    [1366,162,13],[1398,160,13],[1380,126,11]
+    // Watermill: fixed beams only (the wheel and the water have no hang points).
+    [122,348,21],[183,318,21],
+    // Western shops, rear eaves and the main shop's front lintel.
+    [367,300,19],[405,291,19],[440,285,19],[480,285,19],
+    [477,350,24],[524,350,24],[575,350,24],[626,350,24],[677,350,24],
+    [545,287,19],[594,287,19],[642,287,19],
+    // Market awning in front of the bridge approach.
+    [754,381,21],[797,382,21],
+    // Near-side bridge rail: follow its arch, with lanterns below the handrail.
+    [845,374,18],[887,354,18],[941,333,18],[984,317,18],
+    [1027,306,18],[1073,302,18],[1115,308,18],[1156,327,18],[1200,349,18],
+    // Pavilion and rear shop eaves; no free-floating hooks above pedestrians.
+    [919,301,16],[948,304,16],[772,283,17],[824,283,17],
+    // Eastern awnings and upper eaves.
+    [1279,361,23],[1326,364,23],[1381,367,23],[1434,385,23],
+    [1287,248,16],[1334,245,16],[1390,249,16],
+    [1470,389,23],[1511,389,23],[1557,389,23],
+    [1636,321,22],[1677,321,22],[1720,321,22],[1752,386,23],[1818,400,23],
+    // Gate gallery and the two sides of the arch.
+    [1830,160,22],[1863,160,22],[1897,160,22],[1932,160,22],
+    [1859,287,27],[1940,287,27],[2016,332,23],
+    // Boat canopy edges, not the quay or the curved canopy roof.
+    [401,504,19],[541,506,19],[998,448,17],[1073,454,17],
+    [1208,488,19],[1255,489,19],[1406,485,19],[1477,482,19],
+    // Distant roofs and the pagoda balconies.
+    [1164,219,11],[1214,219,11],[1270,225,11],[1463,242,12],
+    [1390,151,10],[1412,151,10],[1385,129,9]
   ];
+  const suspension=4;
   const windows=[
     [485,377,29,25],[530,375,29,26],[581,375,28,26],[633,375,29,26],
     [380,302,16,23],[419,302,16,23],[457,288,16,24],
@@ -113,7 +126,7 @@
       glow(x+w/2,y+h/2,w*1.65,.32);
       const g=c.createLinearGradient(x,y,x,y+h);g.addColorStop(0,'#e9a74726');g.addColorStop(.6,'#ffd07c66');g.addColorStop(1,'#f8ba5522');c.fillStyle=g;c.fillRect(x,y,w,h);
     }
-    for(const [x,y,h] of lamps)glow(x,y+h*.38,h*1.8,.62);
+    for(const [x,y,h] of lamps)glow(x,y+suspension+h*.38,h*1.8,.62);
     // Short broken reflections follow the existing horizontal water strokes.
     for(const [index,[x,start,length,width]] of [[150,550,70,33],[440,559,95,48],[648,535,85,30],[959,536,105,36],[1068,468,80,22],[1250,548,95,33],[1440,553,95,40],[1850,566,79,31]].entries()){
       for(let j=0;j<32;j++){
@@ -129,8 +142,10 @@
       for(const [i,[x,y,h]] of lamps.entries()){
         const green=i%5===2,s=green?[803,86,518,932]:[274,48,380,968];
         const w=h*s[2]/s[3];
-        c.strokeStyle='#92754aaa';c.lineWidth=.55;c.beginPath();c.moveTo(x,y-4);c.lineTo(x,y+2);c.stroke();
-        c.drawImage(art,...s,x-w/2,y,w,h);
+        // The cord starts exactly on the traced structure and reaches the
+        // hanging ring in the sprite; lamp and glow share that same offset.
+        c.strokeStyle='#746043dd';c.lineWidth=.7;c.beginPath();c.moveTo(x,y);c.lineTo(x,y+suspension+1);c.stroke();
+        c.drawImage(art,...s,x-w/2,y+suspension,w,h);
       }
     }
   }
